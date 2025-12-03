@@ -86,7 +86,9 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
       // Determinar qual endpoint usar baseado no provider do modelo
       const modelInfo = MODELS.find(m => m.id === (currentConversation.model || selectedModel));
       const endpoint = modelInfo?.provider === 'gemini' ? '/api/chat/gemini' : '/api/chat/groq';
-      const apiUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:3001'}${endpoint}`;
+      // Em produção (Vercel), usa URL relativa. Em dev, usa localhost:3001
+      const baseUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3001' : '');
+      const apiUrl = `${baseUrl}${endpoint}`;
       
       const response = await fetch(apiUrl, {
         method: 'POST',
