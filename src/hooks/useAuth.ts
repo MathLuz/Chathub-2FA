@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { User, Session, AuthResponse } from '../types/auth';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+// Em produção (Vercel), a API está na mesma URL. Em dev, usa localhost:3001
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3001' : '');
 const SESSION_KEY = 'chathub_session';
 
 export function useAuth() {
