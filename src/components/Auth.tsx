@@ -1,0 +1,166 @@
+import React, { useState } from 'react';
+import { Mail, Lock, Loader2, AlertCircle, UserCircle } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
+
+interface AuthProps {
+  onSuccess: () => void;
+  on2FARequired?: (tempToken: string) => void;
+}
+
+export function Auth({ onSuccess, on2FARequired }: AuthProps) {
+  const { continueAsGuest, register, login } = useAuth();
+  const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      if (isLogin) {
+        const result = await login(email, password);
+        
+        if (!result.success) {
+          throw new Error(result.message);
+        }
+        
+        if (result.requires2FA && result.tempToken && on2FARequired) {
+          on2FARequired(result.tempToken);
+        } else {
+          onSuccess();
+        }
+      } else {
+        const result = await register(email, password);
+        
+        if (!result.success) {
+          throw new Error(result.message);
+        }
+        
+        setEmail('');
+        setPassword('');
+        alert('Account created successfully! You can now login.');
+        setIsLogin(true);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGuest = async () => {
+    setLoading(true);
+    setError('');
+    
+    try {
+      const result = await continueAsGuest();
+      
+      if (!result.success) {
+        throw new Error(result.message);
+      }
+      
+      onSuccess();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to continue as guest');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="bg-zinc-800 rounded-2xl shadow-2xl p-8 border-2 border-transparent bg-gradient-to-br from-zinc-800 to-zinc-900 relative before:absolute before:inset-0 before:-z-10 before:rounded-2xl before:p-[2px] before:bg-gradient-to-br before:from-purple-500 before:via-blue-500 before:to-cyan-500">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent mb-2 text-center">ChatHub</h1>
+          <p className="text-zinc-400 text-center mb-8">Plataforma de Chat Multi-IA</p>
+
+          <form onSubmit={handleAuth} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-zinc-300 mb-2">Email</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-3 text-zinc-500 w-5 h-5" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="seu@email.com"
+                  className="w-full bg-zinc-700 text-white pl-10 pr-4 py-2 rounded-lg focus:outline-none border border-zinc-600 focus:border-purple-400 transition-colors"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-zinc-300 mb-2">Senha</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-3 text-zinc-500 w-5 h-5" />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full bg-zinc-700 text-white pl-10 pr-4 py-2 rounded-lg focus:outline-none border border-zinc-600 focus:border-cyan-400 transition-colors"
+                  required
+                />
+              </div>
+            </div>
+
+            {error && (
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 flex gap-2">
+                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-red-500">{error}</p>
+              </div>
+            )}
+
+            <div className="relative rounded-lg p-[2px] bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-600">
+                <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-zinc-800 hover:bg-zinc-900 disabled:bg-zinc-800/50 text-white font-semibold py-2 rounded-md transition-all duration-300 flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-purple-500/20"
+                >
+                {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                {isLogin ? 'Entrar' : 'Criar Conta'}
+                </button>
+            </div>
+          </form>
+
+          <div className="mt-6 space-y-4">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-zinc-600"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-zinc-800 text-zinc-400">Ou</span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleGuest}
+              disabled={loading}
+              className="w-full bg-zinc-700 hover:bg-zinc-600 disabled:bg-zinc-700/50 text-white font-semibold py-2 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 border border-zinc-600 hover:border-purple-500/50"
+            >
+              <UserCircle className="w-5 h-5" />
+              Continuar como Visitante
+            </button>
+
+            <p className="text-zinc-400 text-sm text-center">
+              {isLogin ? 'Não tem uma conta?' : 'Já tem uma conta?'}{' '}
+              <button
+                type="button"
+                onClick={() => setIsLogin(!isLogin)}
+                className="text-transparent bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text hover:from-purple-300 hover:to-cyan-300 font-medium transition-all"
+              >
+                {isLogin ? 'Criar Conta' : 'Entrar'}
+              </button>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
