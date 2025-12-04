@@ -53,6 +53,11 @@ export function useAuth() {
     };
     console.log('🔵 [useAuth] Atualizando user state:', newUser);
     setUser(newUser);
+    
+    // Forçar verificação após o state ser atualizado
+    setTimeout(() => {
+      console.log('🔵 [useAuth] State após setUser - user deve estar atualizado agora');
+    }, 0);
   };
 
   // Criar sessão guest

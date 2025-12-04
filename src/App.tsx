@@ -13,9 +13,11 @@ function App() {
   const [tempToken, setTempToken] = useState('');
   const [show2FASetup, setShow2FASetup] = useState(false);
 
+  console.log('🔵 [App] RENDER - user:', user, 'appState:', appState);
+
   // Redirecionar para chat se já tem sessão
   useEffect(() => {
-    console.log('🔵 [App] useEffect - user:', user, 'appState:', appState);
+    console.log('🔵 [App] useEffect disparado - user:', user, 'appState:', appState);
     if (user && appState === 'auth') {
       console.log('🔵 [App] useEffect - Redirecionando para chat');
       setAppState('chat');
