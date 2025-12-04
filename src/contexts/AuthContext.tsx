@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useState, useEffect, ReactNode } from 'react';
 import { User, Session, AuthResponse } from '../types/auth';
 
 // Em produção (Vercel), a API está na mesma URL. Em dev, usa localhost:3001
@@ -10,6 +10,14 @@ interface TwoFAResponse {
   message?: string;
 }
 
+interface Setup2FAResponse {
+  success: boolean;
+  secret?: string;
+  qrCode?: string;
+  backupCodes?: string[];
+  message?: string;
+}
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -18,13 +26,13 @@ interface AuthContextType {
   register: (email: string, password: string) => Promise<AuthResponse>;
   login: (email: string, password: string) => Promise<AuthResponse>;
   verify2FA: (tempToken: string, code: string) => Promise<AuthResponse>;
-  setup2FA: (email: string) => Promise<any>;
+  setup2FA: (email: string) => Promise<Setup2FAResponse | null>;
   enable2FA: (email: string, code: string) => Promise<TwoFAResponse>;
   disable2FA: (email: string) => Promise<TwoFAResponse>;
   logout: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -295,12 +303,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
 }
