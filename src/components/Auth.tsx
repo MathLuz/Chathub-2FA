@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Mail, Lock, Loader2, AlertCircle, UserCircle } from 'lucide-react';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../contexts/AuthContext';
 
 interface AuthProps {
   onSuccess: () => void;
