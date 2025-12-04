@@ -15,16 +15,21 @@ function App() {
 
   // Redirecionar para chat se já tem sessão
   useEffect(() => {
+    console.log('🔵 [App] useEffect - user:', user, 'appState:', appState);
     if (user && appState === 'auth') {
+      console.log('🔵 [App] useEffect - Redirecionando para chat');
       setAppState('chat');
     }
   }, [user, appState]);
 
   const handleAuthSuccess = () => {
+    console.log('🔵 [App] handleAuthSuccess chamado, user:', user);
     // Se o usuário não é guest e não tem 2FA, oferecer setup
     if (user && !user.isGuest && !user.has2FAEnabled) {
+      console.log('🔵 [App] Mostrando setup 2FA');
       setShow2FASetup(true);
     }
+    console.log('🔵 [App] Mudando para estado chat');
     setAppState('chat');
   };
 

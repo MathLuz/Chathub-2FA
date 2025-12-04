@@ -57,14 +57,19 @@ export function Auth({ onSuccess, on2FARequired }: AuthProps) {
     setError('');
     
     try {
+      console.log('🔵 [Frontend] Iniciando sessão guest...');
       const result = await continueAsGuest();
+      console.log('🔵 [Frontend] Resultado da sessão guest:', result);
       
       if (!result.success) {
+        console.error('🔴 [Frontend] Falha ao criar sessão guest:', result.message);
         throw new Error(result.message);
       }
       
+      console.log('✅ [Frontend] Sessão guest criada, chamando onSuccess()');
       onSuccess();
     } catch (err) {
+      console.error('🔴 [Frontend] Erro no handleGuest:', err);
       setError(err instanceof Error ? err.message : 'Failed to continue as guest');
     } finally {
       setLoading(false);
