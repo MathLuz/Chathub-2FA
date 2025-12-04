@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from './hooks/useAuth';
+import { useAuth } from './contexts/AuthContext';
 import { Auth } from './components/Auth';
 import { Verify2FA } from './components/Verify2FA';
 import { Chat } from './components/Chat';

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Shield, Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../contexts/AuthContext';
 
 interface Verify2FAProps {
   tempToken: string;

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Conversation } from '../lib/chatHistory';
 import { Plus, Trash2, LogOut, Shield, ShieldCheck } from 'lucide-react';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../contexts/AuthContext';
 import { User } from '../types/auth';
 
 interface SidebarProps {
