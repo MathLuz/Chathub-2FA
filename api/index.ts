@@ -1,20 +1,14 @@
 // Versão serverless do backend para Vercel
-import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import { authService } from '../src/services/auth';
-import { LoginRequest, RegisterRequest } from '../src/types/auth';
+import type { LoginRequest, RegisterRequest } from '../src/types/auth';
 
 const app = express();
 
 // Middleware
 app.use(cors());
 app.use(express.json());
-
-// Desabilitar verificação SSL apenas em desenvolvimento
-if (process.env.NODE_ENV !== 'production') {
-  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-}
 
 // Health check
 app.get('/api/health', (_req, res) => {
