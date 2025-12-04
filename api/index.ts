@@ -343,4 +343,5 @@ app.post('/api/chat/gemini', async (req, res) => {
 });
 
 // Export para Vercel Serverless
+// A Vercel automaticamente converte o Express app em função serverless
 export default app;
