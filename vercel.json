@@ -1,6 +1,11 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "functions": {
+    "api/index.ts": {
+      "includeFiles": "src/**"
+    }
+  },
   "rewrites": [
     { "source": "/api/health", "destination": "/api/index" },
     { "source": "/api/auth/(.*)", "destination": "/api/index" },
