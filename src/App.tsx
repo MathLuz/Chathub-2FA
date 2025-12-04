@@ -19,18 +19,20 @@ function App() {
     if (user && appState === 'auth') {
       console.log('🔵 [App] useEffect - Redirecionando para chat');
       setAppState('chat');
+      
+      // Se o usuário não é guest e não tem 2FA, oferecer setup
+      if (!user.isGuest && !user.has2FAEnabled) {
+        console.log('🔵 [App] useEffect - Mostrando setup 2FA');
+        setShow2FASetup(true);
+      }
     }
   }, [user, appState]);
 
   const handleAuthSuccess = () => {
     console.log('🔵 [App] handleAuthSuccess chamado, user:', user);
-    // Se o usuário não é guest e não tem 2FA, oferecer setup
-    if (user && !user.isGuest && !user.has2FAEnabled) {
-      console.log('🔵 [App] Mostrando setup 2FA');
-      setShow2FASetup(true);
-    }
-    console.log('🔵 [App] Mudando para estado chat');
-    setAppState('chat');
+    // Não mudamos o appState aqui! O useEffect vai fazer isso quando o user for atualizado
+    // Apenas configuramos o 2FA setup se necessário (isso será verificado depois)
+    console.log('🔵 [App] Aguardando user state atualizar...');
   };
 
   const handle2FARequired = (token: string) => {

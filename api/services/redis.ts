@@ -12,15 +12,10 @@ class RedisService {
     // Detecta se está rodando no Node.js (backend) ou no browser (frontend)
     this.isNode = typeof process !== 'undefined' && typeof process.env !== 'undefined';
     
-    if (this.isNode) {
-      // Backend: usa process.env (Upstash usa KV_* sem VITE_ prefix)
-      this.baseUrl = process.env.KV_REST_API_URL || process.env.VITE_KV_REST_API_URL || process.env.VITE_REDIS_URL || '';
-      this.token = process.env.KV_REST_API_TOKEN || process.env.VITE_KV_REST_API_TOKEN || '';
-    } else {
-      // Frontend: usa import.meta.env
-      this.baseUrl = import.meta.env?.VITE_KV_REST_API_URL || import.meta.env?.VITE_REDIS_URL || '';
-      this.token = import.meta.env?.VITE_KV_REST_API_TOKEN || '';
-    }
+    // Backend (api/): sempre usa process.env
+    // Upstash usa KV_* sem VITE_ prefix
+    this.baseUrl = process.env.KV_REST_API_URL || process.env.VITE_KV_REST_API_URL || process.env.VITE_REDIS_URL || '';
+    this.token = process.env.KV_REST_API_TOKEN || process.env.VITE_KV_REST_API_TOKEN || '';
 
     if (!this.baseUrl) {
       console.warn('Redis/KV URL not configured. Running in local mode with in-memory storage.');
