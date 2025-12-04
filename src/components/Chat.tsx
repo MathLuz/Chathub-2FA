@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Message, Conversation, addMessageToConversation, createConversation, updateConversationTitle } from '../lib/chatHistory';
 import { Send, Loader2, PanelLeftCloseIcon, PanelLeftOpenIcon } from 'lucide-react';
 import { Sidebar } from './Sidebar';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 
 const MODELS = [
   { id: 'llama-3.1-8b-instant', name: 'Llama 3.1 8B Instant', provider: 'groq' },

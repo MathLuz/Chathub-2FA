@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Copy, Check, AlertCircle, Loader2 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 
 interface TwoFASetupProps {
   userEmail: string;
@@ -26,13 +26,13 @@ export function TwoFASetup({ userEmail, onComplete, onSkip }: TwoFASetupProps) {
     try {
       const result = await setup2FA(userEmail);
       
-      if (!result.success) {
-        throw new Error(result.message || 'Failed to setup 2FA');
+      if (!result || !result.success) {
+        throw new Error(result?.message || 'Failed to setup 2FA');
       }
       
-      setSecret(result.secret);
-      setBackupCodes(result.backupCodes);
-      setQrCode(result.qrCode);
+      setSecret(result.secret || '');
+      setBackupCodes(result.backupCodes || []);
+      setQrCode(result.qrCode || '');
       setStep('verify');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate secret');
