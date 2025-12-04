@@ -19,7 +19,7 @@ class AuthService {
     return `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
   }
 
-  // Criar sessão guest
+  // Criar sessão guest (não salva no Redis - apenas retorna dados para localStorage do navegador)
   async createGuestSession(): Promise<AuthResponse> {
     const guestId = `guest-${this.generateId()}`;
     const session: Session = {
@@ -30,8 +30,8 @@ class AuthService {
       expiresAt: Date.now() + (this.SESSION_EXPIRY * 1000),
     };
 
-    const sessionId = this.generateId();
-    await redis.saveSession(sessionId, session, this.SESSION_EXPIRY);
+    // Guest não precisa salvar no Redis - sessão fica apenas no localStorage do navegador
+    // Sem custo de armazenamento e sem dados sensíveis no servidor
 
     return {
       success: true,
