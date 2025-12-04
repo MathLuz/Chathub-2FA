@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Message, Conversation, addMessageToConversation, createConversation, updateConversationTitle } from '../lib/chatHistory';
+import { Message, Conversation, addMessageToConversation, createConversation, updateConversationTitle, getConversations } from '../lib/chatHistory';
 import { Send, Loader2, PanelLeftCloseIcon, PanelLeftOpenIcon } from 'lucide-react';
 import { Sidebar } from './Sidebar';
 import { useAuth } from '../hooks/useAuth';
@@ -28,11 +28,11 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  const isGuest = user?.isGuest ?? false;
 
+  useEffect(() => {
     const loadConversations = () => {
-      const data = localStorage.getItem('chat_conversations');
-      const convs = data ? JSON.parse(data) : [];
+      const convs = getConversations(isGuest);
       setConversations(convs);
       if (convs.length === 0) {
         const newConv = createConversation(MODELS[0].id);
@@ -44,7 +44,7 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
     };
 
     loadConversations();
-  }, []);
+  }, [isGuest]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -72,14 +72,14 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
     };
 
     setCurrentConversation(updatedConv);
-    addMessageToConversation(currentConversation.id, userMessage);
+    addMessageToConversation(currentConversation.id, userMessage, isGuest);
     setInput('');
     setLoading(true);
 
     try {
       if (currentConversation.title === 'New Chat' && currentConversation.messages.length === 0) {
         const title = input.slice(0, 50);
-        updateConversationTitle(currentConversation.id, title);
+        updateConversationTitle(currentConversation.id, title, isGuest);
         updatedConv.title = title;
       }
 
@@ -124,7 +124,7 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
       };
 
       setCurrentConversation(finalConv);
-      addMessageToConversation(currentConversation.id, assistantMessage);
+      addMessageToConversation(currentConversation.id, assistantMessage, isGuest);
     } catch (error) {
       console.error('Error:', error);
       let errorText = 'Falha ao obter resposta';
@@ -147,7 +147,7 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
         messages: [...updatedConv.messages, errorMessage],
       };
       setCurrentConversation(errorConv);
-      addMessageToConversation(currentConversation.id, errorMessage);
+      addMessageToConversation(currentConversation.id, errorMessage, isGuest);
     } finally {
       setLoading(false);
     }
