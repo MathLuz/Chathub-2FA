@@ -1,8 +1,8 @@
 // Versão serverless do backend para Vercel
 import express from 'express';
 import cors from 'cors';
-import { authService } from '../src/services/auth';
-import type { LoginRequest, RegisterRequest } from '../src/types/auth';
+import { authService } from './services/auth.js';
+import type { LoginRequest, RegisterRequest } from './types/auth.js';
 
 const app = express();
 
