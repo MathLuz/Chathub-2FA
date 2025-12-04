@@ -41,20 +41,24 @@ export function useAuth() {
 
   // Salvar sessão no localStorage
   const saveSession = (newSession: Session) => {
+    console.log('🔵 [useAuth] Salvando no localStorage:', newSession);
     localStorage.setItem(SESSION_KEY, JSON.stringify(newSession));
     setSession(newSession);
-    setUser({
+    const newUser = {
       id: newSession.userId,
       email: newSession.email,
       isGuest: newSession.isGuest,
       has2FAEnabled: newSession.has2FAEnabled,
       createdAt: Date.now(),
-    });
+    };
+    console.log('🔵 [useAuth] Atualizando user state:', newUser);
+    setUser(newUser);
   };
 
   // Criar sessão guest
   const continueAsGuest = async (): Promise<AuthResponse> => {
     try {
+      console.log('🔵 [useAuth] Fazendo requisição para:', `${API_URL}/api/auth/guest`);
       const response = await fetch(`${API_URL}/api/auth/guest`, {
         method: 'POST',
         headers: {
@@ -62,15 +66,18 @@ export function useAuth() {
         },
       });
 
+      console.log('🔵 [useAuth] Status da resposta:', response.status);
       const result: AuthResponse = await response.json();
+      console.log('🔵 [useAuth] Resultado recebido:', result);
       
       if (result.success && result.session) {
+        console.log('🔵 [useAuth] Salvando sessão:', result.session);
         saveSession(result.session);
       }
       
       return result;
     } catch (error) {
-      console.error('Guest session error:', error);
+      console.error('🔴 [useAuth] Erro na sessão guest:', error);
       return {
         success: false,
         message: 'Failed to create guest session',
