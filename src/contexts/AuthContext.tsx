@@ -70,15 +70,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Salvar sessão no localStorage
+  // Salvar sessão no localStorage (APENAS para guests)
   const saveSession = (newSession: Session) => {
-    console.log('🔵 [AuthProvider] Salvando no localStorage:', newSession);
-    localStorage.setItem(SESSION_KEY, JSON.stringify(newSession));
+    const isGuest = newSession.email === 'guest';
+    
+    // Só salvar no localStorage se for guest
+    if (isGuest) {
+      console.log('🔵 [AuthProvider] Salvando sessão guest no localStorage:', newSession);
+      localStorage.setItem(SESSION_KEY, JSON.stringify(newSession));
+    } else {
+      console.log('🔵 [AuthProvider] Usuário autenticado - sessão gerenciada pelo backend (Redis)');
+    }
+    
     setSession(newSession);
     const newUser = {
       id: newSession.userId,
       email: newSession.email,
-      isGuest: newSession.email === 'guest', // Calcula baseado no email
+      isGuest,
       has2FAEnabled: newSession.has2FAEnabled,
       createdAt: Date.now(),
     };
