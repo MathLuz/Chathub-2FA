@@ -1,6 +1,6 @@
 {
-    "name": "ChatHub 2FA - Chat com IA",
-    "short_name": "ChatHub",
+    "name": "ChatHub 2FA",
+    "short_name": "ChatHub 2FA",
     "description": "Chat com múltiplos modelos de IA (Groq, Gemini) e autenticação de dois fatores",
     "start_url": "/",
     "scope": "/",
