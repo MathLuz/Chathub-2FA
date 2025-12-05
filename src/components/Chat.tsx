@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Message, Conversation, addMessageToConversation, createConversation, updateConversationTitle, getConversations } from '../lib/chatHistory';
+import { Message, Conversation, addMessageToConversation, createConversation, updateConversationTitle, getConversations, saveConversation } from '../lib/chatHistory';
 import { Send, Loader2, PanelLeftCloseIcon, PanelLeftOpenIcon } from 'lucide-react';
 import { Sidebar } from './Sidebar';
 import { useAuth } from '../hooks/useAuth';
@@ -36,6 +36,7 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
       setConversations(convs);
       if (convs.length === 0) {
         const newConv = createConversation(MODELS[0].id);
+        saveConversation(newConv, isGuest); // Salva imediatamente
         setConversations([newConv]);
         setCurrentConversation(newConv);
       } else {
@@ -52,6 +53,8 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
 
   const handleNewChat = () => {
     const newConv = createConversation(selectedModel);
+    saveConversation(newConv, isGuest); // Salva imediatamente
+    setConversations([...conversations, newConv]); // Adiciona na lista
     setCurrentConversation(newConv);
     setInput('');
   };
