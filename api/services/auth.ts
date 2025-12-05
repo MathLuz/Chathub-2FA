@@ -25,13 +25,13 @@ class AuthService {
     const session: Session = {
       userId: guestId,
       email: 'guest',
-      isGuest: true,
       has2FAEnabled: false,
       expiresAt: Date.now() + (this.SESSION_EXPIRY * 1000),
     };
 
     // Guest não precisa salvar no Redis - sessão fica apenas no localStorage do navegador
     // Sem custo de armazenamento e sem dados sensíveis no servidor
+    // O frontend determina isGuest pela lógica (email === 'guest')
 
     return {
       success: true,
@@ -39,13 +39,11 @@ class AuthService {
       user: {
         id: guestId,
         email: 'guest',
-        isGuest: true,
+        isGuest: true, // Frontend usa isso para UI
         has2FAEnabled: false,
         createdAt: Date.now(),
       },
-      session: {
-        ...session,
-      },
+      session,
     };
   }
 
@@ -102,7 +100,6 @@ class AuthService {
       const session: Session = {
         userId,
         email: data.email.toLowerCase(),
-        isGuest: false,
         has2FAEnabled: false,
         expiresAt: Date.now() + (this.SESSION_EXPIRY * 1000),
       };
@@ -177,7 +174,6 @@ class AuthService {
       const session: Session = {
         userId,
         email: data.email.toLowerCase(),
-        isGuest: false,
         has2FAEnabled: userData.has2FAEnabled,
         expiresAt: Date.now() + (this.SESSION_EXPIRY * 1000),
       };
@@ -244,7 +240,6 @@ class AuthService {
       const session: Session = {
         userId,
         email: tempData.email,
-        isGuest: false,
         has2FAEnabled: true,
         expiresAt: Date.now() + (this.SESSION_EXPIRY * 1000),
       };
