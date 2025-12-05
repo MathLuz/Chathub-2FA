@@ -84,7 +84,7 @@ export function Auth({ onSuccess, on2FARequired }: AuthProps) {
         <div className="bg-white dark:bg-zinc-800 rounded-2xl shadow-2xl p-8 border-2 border-transparent relative before:absolute before:inset-0 before:-z-10 before:rounded-2xl before:p-[2px] before:bg-gradient-to-br before:from-purple-500 before:via-blue-500 before:to-cyan-500">
           <div className="flex justify-between items-start mb-6">
             <div className="flex-1">
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent mb-2">ChatHub</h1>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500 bg-clip-text text-transparent mb-2">ChatHub</h1>
               <p className="text-zinc-600 dark:text-zinc-400">Plataforma de Chat Multi-IA</p>
             </div>
             <button
