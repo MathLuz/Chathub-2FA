@@ -1,5 +1,5 @@
 import { redis } from './redis.js';
-import { generateSecret, generateBackupCodes, verifyTOTP, generateTOTP } from '../utils/totp.js';
+import { generateSecret, generateBackupCodes, verifyTOTP } from '../utils/totp.js';
 import { hash, compare } from '../utils/bcrypt.js';
 import { 
   UserData, 
@@ -224,14 +224,7 @@ class AuthService {
       }
 
       // Verificar código TOTP
-      console.log('🔐 Verificando TOTP:', {
-        secret: userData.secret2FA.substring(0, 4) + '****', // Segurança: só mostra parte
-        code,
-        serverTime: new Date().toISOString(),
-        timestamp: Math.floor(Date.now() / 1000 / 30),
-      });
-      const isValid = verifyTOTP(userData.secret2FA, code, 2); // Window de 2 (60s tolerância)
-      console.log('🔐 Resultado TOTP:', isValid);
+      const isValid = verifyTOTP(userData.secret2FA, code, 1);
       if (!isValid) {
         return {
           success: false,
@@ -308,22 +301,11 @@ class AuthService {
     try {
       const userData = await redis.getUser(email);
       if (!userData || !userData.secret2FA) {
-        console.error('❌ enable2FA: User ou secret não encontrado para', email);
         return false;
       }
 
-      // Gerar código que o servidor espera (pra debug)
-      const serverCode = generateTOTP(userData.secret2FA).toString().padStart(6, '0');
-      console.log('🔐 Verificando código no enable2FA:', {
-        email,
-        secret: userData.secret2FA.substring(0, 4) + '****',
-        codeRecebido: code,
-        codeEsperado: serverCode,
-        serverTime: new Date().toISOString(),
-        timestamp: Math.floor(Date.now() / 1000 / 30),
-      });
-      const isValid = verifyTOTP(userData.secret2FA, code, 2); // Window de 2 (60s tolerância)
-      console.log('🔐 Resultado enable2FA:', isValid);
+      // Validar código TOTP
+      const isValid = verifyTOTP(userData.secret2FA, code, 1);
       if (!isValid) {
         return false;
       }

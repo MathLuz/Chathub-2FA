@@ -1,8 +1,8 @@
 import 'dotenv/config';
 import express, { Request, Response } from 'express';
 import cors from 'cors';
-import { authService } from '../src/services/auth';
-import { LoginRequest, RegisterRequest } from '../src/types/auth';
+import { authService } from './services/auth.js';
+import { LoginRequest, RegisterRequest } from './types/auth.js';
 
 // Desabilitar verificação SSL apenas em desenvolvimento
 if (process.env.NODE_ENV !== 'production') {
