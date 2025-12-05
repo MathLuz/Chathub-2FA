@@ -61,16 +61,15 @@ POST /api/chat                    # Enviar mensagem para IA
 - **localStorage**: Conversas de usuários autenticados
 - **RAM**: Conversas de guests (volatil)
 
-## 🌐 Acesse Online
-
-**URL**: [https://chathub-2fa.vercel.app/](https://chathub-2fa.vercel.app/)
-
 ## 💡 Motivação do Projeto
 
 Este projeto foi criado com dois objetivos principais:
 1. **Aprender a implementar autenticação 2FA** - Explorar o protocolo TOTP, geração de QR codes, backup codes e fluxo completo de segurança
 2. **Desenvolver um projeto full stack completo** - Frontend e backend integrados no mesmo repositório, com deploy serverless e banco de dados em nuvem
 
-## 👤 Autor
+## 🌐 Acesse Online
 
-**Matheus Luz**
+**URL**: [https://chathub-2fa.vercel.app/](https://chathub-2fa.vercel.app/)
+---
+
+**Dev:** Matheus Luz

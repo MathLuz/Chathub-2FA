@@ -76,7 +76,7 @@ export function TwoFASetup({ userEmail, onComplete, onSkip }: TwoFASetupProps) {
       <div className="bg-zinc-800 rounded-2xl shadow-2xl p-8 max-w-md w-full border-2 border-transparent relative before:absolute before:inset-0 before:-z-10 before:rounded-2xl before:p-[2px] before:bg-gradient-to-br before:from-purple-500 before:via-blue-500 before:to-cyan-500">
         {step === 'intro' && (
           <>
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent mb-4">Proteja sua Conta</h2>
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500 bg-clip-text text-transparent mb-4">Proteja sua Conta</h2>
             <p className="text-zinc-300 mb-6">
               Habilite a autenticação de dois fatores para adicionar uma camada extra de segurança à sua conta.
             </p>
@@ -103,7 +103,7 @@ export function TwoFASetup({ userEmail, onComplete, onSkip }: TwoFASetupProps) {
 
         {step === 'verify' && (
           <>
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent mb-4">Verifique sua Configuração</h2>
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500 bg-clip-text text-transparent mb-4">Verifique sua Configuração</h2>
             <p className="text-zinc-300 mb-4">
               Escaneie este QR code com Google Authenticator ou Authy:
             </p>
@@ -167,7 +167,7 @@ export function TwoFASetup({ userEmail, onComplete, onSkip }: TwoFASetupProps) {
 
         {step === 'backup' && (
           <>
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent mb-4">Salvar Códigos de Backup</h2>
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500 bg-clip-text text-transparent mb-4">Salvar Códigos de Backup</h2>
             <p className="text-zinc-300 mb-4">
               Salve estes códigos de backup em um local seguro. Você pode usá-los para acessar sua conta se perder o acesso ao seu autenticador.
             </p>
