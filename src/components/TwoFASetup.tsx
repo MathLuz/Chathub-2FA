@@ -146,14 +146,22 @@ export function TwoFASetup({ userEmail, onComplete, onSkip }: TwoFASetupProps) {
               </div>
             )}
 
-            <button
-              onClick={handleVerifyCode}
-              disabled={loading || verificationCode.length !== 6}
-              className="w-full bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-600 hover:from-purple-700 hover:via-blue-700 hover:to-cyan-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold py-2 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20"
-            >
-              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-              Verificar e Continuar
-            </button>
+            <div className="space-y-3">
+              <button
+                onClick={handleVerifyCode}
+                disabled={loading || verificationCode.length !== 6}
+                className="w-full bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-600 hover:from-purple-700 hover:via-blue-700 hover:to-cyan-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold py-2 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20"
+              >
+                {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                Verificar e Continuar
+              </button>
+              <button
+                onClick={onSkip}
+                className="w-full bg-zinc-700 hover:bg-zinc-600 text-zinc-300 font-semibold py-2 rounded-lg transition-all duration-300 border border-zinc-600 hover:border-zinc-500"
+              >
+                Cancelar e Fazer Depois
+              </button>
+            </div>
           </>
         )}
 
