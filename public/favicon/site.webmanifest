@@ -1,19 +1,28 @@
 {
-    "name": "",
-    "short_name": "",
+    "name": "ChatHub 2FA - Chat com IA",
+    "short_name": "ChatHub",
+    "description": "Chat com múltiplos modelos de IA e autenticação de dois fatores",
+    "start_url": "/",
+    "scope": "/",
+    "display": "standalone",
+    "orientation": "portrait-primary",
+    "theme_color": "#18181b",
+    "background_color": "#09090b",
     "icons": [
         {
-            "src": "/android-chrome-192x192.png",
+            "src": "/favicon/android-chrome-192x192.png",
             "sizes": "192x192",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any maskable"
         },
         {
-            "src": "/android-chrome-512x512.png",
+            "src": "/favicon/android-chrome-512x512.png",
             "sizes": "512x512",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any maskable"
         }
     ],
-    "theme_color": "#ffffff",
-    "background_color": "#ffffff",
-    "display": "standalone"
+    "categories": ["productivity", "utilities"],
+    "lang": "pt-BR",
+    "dir": "ltr"
 }
