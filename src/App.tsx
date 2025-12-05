@@ -17,15 +17,17 @@ function App() {
 
   // Redirecionar para chat se já tem sessão
   useEffect(() => {
-    console.log('🔵 [App] useEffect disparado - user:', user, 'appState:', appState);
+    console.log('🔵 [App] useEffect - user:', user?.email, 'has2FA:', user?.has2FAEnabled, 'appState:', appState);
     if (user && appState === 'auth') {
-      console.log('🔵 [App] useEffect - Redirecionando para chat');
+      console.log('🔵 [App] Redirecionando para chat');
       setAppState('chat');
       
       // Se o usuário não é guest e não tem 2FA, oferecer setup
       if (!user.isGuest && !user.has2FAEnabled) {
-        console.log('🔵 [App] useEffect - Mostrando setup 2FA');
+        console.log('🔵 [App] Mostrando setup 2FA (user.has2FAEnabled =', user.has2FAEnabled, ')');
         setShow2FASetup(true);
+      } else {
+        console.log('🔵 [App] NÃO mostrando setup 2FA - isGuest:', user.isGuest, 'has2FA:', user.has2FAEnabled);
       }
     }
   }, [user, appState]);
@@ -96,10 +98,11 @@ function App() {
   return (
     <div className="animate-fadeIn min-h-screen bg-white dark:bg-zinc-900 transition-colors duration-300">
       {mainContent}
-      {show2FASetup && user && !user.isGuest && !user.has2FAEnabled && (
+      {show2FASetup && user && !user.isGuest && (
         <TwoFASetup
           userEmail={user.email}
           onComplete={() => {
+            console.log('✅ 2FA Setup completo!');
             setShow2FASetup(false);
           }}
           onSkip={() => {
