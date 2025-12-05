@@ -103,30 +103,30 @@ export function Auth({ onSuccess, on2FARequired }: AuthProps) {
 
           <form onSubmit={handleAuth} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-2">Email</label>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Email</label>
               <div className="relative">
-                <Mail className="absolute left-3 top-3 text-zinc-500 w-5 h-5" />
+                <Mail className="absolute left-3 top-3 text-zinc-400 dark:text-zinc-500 w-5 h-5" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="seu@email.com"
-                  className="w-full bg-zinc-700 text-white pl-10 pr-4 py-2 rounded-lg focus:outline-none border border-zinc-600 focus:border-purple-400 transition-colors"
+                  className="w-full bg-zinc-100 dark:bg-zinc-700 text-zinc-900 dark:text-white pl-10 pr-4 py-2 rounded-lg focus:outline-none border border-zinc-300 dark:border-zinc-600 focus:border-purple-400 transition-colors placeholder:text-zinc-500"
                   required
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-2">Senha</label>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Senha</label>
               <div className="relative">
-                <Lock className="absolute left-3 top-3 text-zinc-500 w-5 h-5" />
+                <Lock className="absolute left-3 top-3 text-zinc-400 dark:text-zinc-500 w-5 h-5" />
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full bg-zinc-700 text-white pl-10 pr-4 py-2 rounded-lg focus:outline-none border border-zinc-600 focus:border-cyan-400 transition-colors"
+                  className="w-full bg-zinc-100 dark:bg-zinc-700 text-zinc-900 dark:text-white pl-10 pr-4 py-2 rounded-lg focus:outline-none border border-zinc-300 dark:border-zinc-600 focus:border-cyan-400 transition-colors placeholder:text-zinc-500"
                   required
                 />
               </div>
@@ -143,7 +143,7 @@ export function Auth({ onSuccess, on2FARequired }: AuthProps) {
                 <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-zinc-800 hover:bg-zinc-900 disabled:bg-zinc-800/50 text-white font-semibold py-2 rounded-md transition-all duration-300 flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-purple-500/20"
+                className="w-full bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 disabled:bg-zinc-100 dark:disabled:bg-zinc-800/50 text-zinc-900 dark:text-white font-semibold py-2 rounded-md transition-all duration-300 flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-purple-500/20"
                 >
                 {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                 {isLogin ? 'Entrar' : 'Criar Conta'}
@@ -154,10 +154,10 @@ export function Auth({ onSuccess, on2FARequired }: AuthProps) {
           <div className="mt-6 space-y-4">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-zinc-600"></div>
+                <div className="w-full border-t border-zinc-300 dark:border-zinc-600"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-zinc-800 text-zinc-400">Ou</span>
+                <span className="px-2 bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">Ou</span>
               </div>
             </div>
 
@@ -165,13 +165,13 @@ export function Auth({ onSuccess, on2FARequired }: AuthProps) {
               type="button"
               onClick={handleGuest}
               disabled={loading}
-              className="w-full bg-zinc-700 hover:bg-zinc-600 disabled:bg-zinc-700/50 text-white font-semibold py-2 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 border border-zinc-600 hover:border-purple-500/50"
+              className="w-full bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 disabled:bg-zinc-200/50 dark:disabled:bg-zinc-700/50 text-zinc-900 dark:text-white font-semibold py-2 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 border border-zinc-300 dark:border-zinc-600 hover:border-purple-500/50"
             >
               <UserCircle className="w-5 h-5" />
               Continuar como Visitante
             </button>
 
-            <p className="text-zinc-400 text-sm text-center">
+            <p className="text-zinc-600 dark:text-zinc-400 text-sm text-center">
               {isLogin ? 'Não tem uma conta?' : 'Já tem uma conta?'}{' '}
               <button
                 type="button"
