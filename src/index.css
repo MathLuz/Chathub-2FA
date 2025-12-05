@@ -2,6 +2,28 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  /* Dark mode (default) */
+  :root.dark {
+    --bg-primary: #18181b;
+    --bg-secondary: #27272a;
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+  }
+
+  /* Light mode */
+  :root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f4f4f5;
+    --text-primary: #18181b;
+    --text-secondary: #71717a;
+  }
+
+  body {
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+}
+
 @layer utilities {
   .animate-fadeIn {
     animation: fadeIn 0.2s ease-in;
