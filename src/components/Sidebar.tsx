@@ -63,7 +63,7 @@ export function Sidebar({
       <div className="p-4 border-b-2 border-transparent relative after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-gradient-to-r after:from-purple-500 after:via-blue-500 after:to-cyan-500">
         <button
           onClick={onNewChat}
-          className="w-full bg-zinc-700 hover:bg-zinc-600 text-white font-semibold py-2 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 border border-zinc-600 hover:border-cyan-500/50"
+          className="w-full bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 text-zinc-900 dark:text-white font-semibold py-2 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 border border-zinc-300 dark:border-zinc-600 hover:border-cyan-500/50"
         >
           <Plus className="w-4 h-4" />
           New Chat
@@ -76,8 +76,8 @@ export function Sidebar({
             key={conv.id}
             className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-300 group flex items-center justify-between cursor-pointer ${
               currentConversation?.id === conv.id
-                ? 'bg-zinc-700 text-white border-l-2 border-purple-500 shadow-lg shadow-purple-500/10'
-                : 'text-zinc-300 hover:bg-zinc-700 hover:text-white hover:border-l-2 hover:border-cyan-500/50 border-l-2 border-transparent'
+                ? 'bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-white border-l-2 border-purple-500 shadow-lg shadow-purple-500/10'
+                : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:text-zinc-900 dark:hover:text-white hover:border-l-2 hover:border-cyan-500/50 border-l-2 border-transparent'
             }`}
           >
             <div 
@@ -103,11 +103,11 @@ export function Sidebar({
       <div className="border-t-2 border-transparent p-4 space-y-2 relative before:absolute before:top-0 before:left-0 before:right-0 before:h-[2px] before:bg-gradient-to-r before:from-purple-500 before:via-blue-500 before:to-cyan-500">
         {user && (
           <>
-            <div className="px-4 py-3 bg-zinc-700 rounded-lg space-y-1 border border-zinc-600">
-              <p className="text-xs text-zinc-400">
+            <div className="px-4 py-3 bg-zinc-200 dark:bg-zinc-700 rounded-lg space-y-1 border border-zinc-300 dark:border-zinc-600">
+              <p className="text-xs text-zinc-600 dark:text-zinc-400">
                 {user.isGuest ? 'Modo Visitante' : 'Conectado como:'}
               </p>
-              <p className="text-sm font-medium truncate">{user.email}</p>
+              <p className="text-sm font-medium truncate text-zinc-900 dark:text-white">{user.email}</p>
               {!user.isGuest && (
                 <div className="flex items-center gap-2 text-xs mt-2">
                   {user.has2FAEnabled ? (
@@ -129,7 +129,7 @@ export function Sidebar({
               <button
                 onClick={handleToggle2FA}
                 disabled={loading}
-                className="w-full bg-zinc-700 hover:bg-zinc-600 disabled:bg-zinc-700/50 text-white font-semibold py-2 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 border border-zinc-600 hover:border-cyan-500/50 hover:shadow-lg hover:shadow-cyan-500/10"
+                className="w-full bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 disabled:bg-zinc-200/50 dark:disabled:bg-zinc-700/50 text-zinc-900 dark:text-white font-semibold py-2 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 border border-zinc-300 dark:border-zinc-600 hover:border-cyan-500/50 hover:shadow-lg hover:shadow-cyan-500/10"
               >
                 <Shield className="w-4 h-4" />
                 {loading ? 'Carregando...' : user.has2FAEnabled ? 'Desabilitar 2FA' : 'Habilitar 2FA'}
@@ -139,7 +139,7 @@ export function Sidebar({
         )}
         <button
           onClick={onLogout}
-          className="w-full bg-red-600/10 hover:bg-red-600/20 text-red-400 font-semibold py-2 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 border border-red-600/30 hover:border-red-500/50 hover:shadow-lg hover:shadow-red-500/10"
+          className="w-full bg-red-600/10 hover:bg-red-600/20 text-red-500 dark:text-red-400 font-semibold py-2 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 border border-red-600/30 hover:border-red-500/50 hover:shadow-lg hover:shadow-red-500/10"
         >
           <LogOut className="w-4 h-4" />
           Sair

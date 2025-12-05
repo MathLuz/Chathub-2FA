@@ -94,7 +94,7 @@ function App() {
   }
 
   return (
-    <div className="animate-fadeIn">
+    <div className="animate-fadeIn min-h-screen bg-white dark:bg-zinc-900 transition-colors duration-300">
       {mainContent}
       {show2FASetup && user && !user.isGuest && !user.has2FAEnabled && (
         <TwoFASetup

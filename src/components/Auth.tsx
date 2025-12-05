@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Mail, Lock, Loader2, AlertCircle, UserCircle } from 'lucide-react';
+import { Mail, Lock, Loader2, AlertCircle, UserCircle, Sun, Moon } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { useTheme } from '../hooks/useTheme';
 
 interface AuthProps {
   onSuccess: () => void;
@@ -9,6 +10,7 @@ interface AuthProps {
 
 export function Auth({ onSuccess, on2FARequired }: AuthProps) {
   const { continueAsGuest, register, login } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -77,11 +79,27 @@ export function Auth({ onSuccess, on2FARequired }: AuthProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-zinc-50 via-zinc-100 to-zinc-50 dark:from-zinc-900 dark:via-zinc-800 dark:to-zinc-900 flex items-center justify-center p-4 transition-colors duration-300">
       <div className="w-full max-w-md">
-        <div className="bg-zinc-800 rounded-2xl shadow-2xl p-8 border-2 border-transparent bg-gradient-to-br from-zinc-800 to-zinc-900 relative before:absolute before:inset-0 before:-z-10 before:rounded-2xl before:p-[2px] before:bg-gradient-to-br before:from-purple-500 before:via-blue-500 before:to-cyan-500">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent mb-2 text-center">ChatHub</h1>
-          <p className="text-zinc-400 text-center mb-8">Plataforma de Chat Multi-IA</p>
+        <div className="bg-white dark:bg-zinc-800 rounded-2xl shadow-2xl p-8 border-2 border-transparent relative before:absolute before:inset-0 before:-z-10 before:rounded-2xl before:p-[2px] before:bg-gradient-to-br before:from-purple-500 before:via-blue-500 before:to-cyan-500">
+          <div className="flex justify-between items-start mb-6">
+            <div className="flex-1">
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent mb-2">ChatHub</h1>
+              <p className="text-zinc-600 dark:text-zinc-400">Plataforma de Chat Multi-IA</p>
+            </div>
+            <button
+              onClick={toggleTheme}
+              type="button"
+              className="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-all hover:shadow-lg hover:shadow-purple-500/20 border border-transparent hover:border-purple-500/30"
+              title={theme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}
+            >
+              {theme === 'dark' ? (
+                <Sun className="w-5 h-5 text-white" />
+              ) : (
+                <Moon className="w-5 h-5 text-zinc-700" />
+              )}
+            </button>
+          </div>
 
           <form onSubmit={handleAuth} className="space-y-4">
             <div>
