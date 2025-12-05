@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser({
             id: parsed.userId,
             email: parsed.email,
-            isGuest: parsed.isGuest,
+            isGuest: parsed.email === 'guest', // Calcula baseado no email
             has2FAEnabled: parsed.has2FAEnabled,
             createdAt: Date.now(),
           });
@@ -78,7 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const newUser = {
       id: newSession.userId,
       email: newSession.email,
-      isGuest: newSession.isGuest,
+      isGuest: newSession.email === 'guest', // Calcula baseado no email
       has2FAEnabled: newSession.has2FAEnabled,
       createdAt: Date.now(),
     };
