@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Message, Conversation, addMessageToConversation, createConversation, updateConversationTitle, getConversations, saveConversation } from '../lib/chatHistory';
+import { Message, Conversation, createConversation, updateConversationTitle, getConversations, saveConversation } from '../lib/chatHistory';
 import { Send, Loader2, PanelLeftCloseIcon, PanelLeftOpenIcon, Sun, Moon } from 'lucide-react';
 import { Sidebar } from './Sidebar';
 import { useAuth } from '../hooks/useAuth';
@@ -29,7 +29,8 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
   const [loading, setLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false); // Inicia fechado no mobile
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
+  const inputRef = useRef<HTMLInputElement>(null);
+
   // Detecta se é mobile e ajusta sidebar
   useEffect(() => {
     const checkMobile = () => {
@@ -43,7 +44,7 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
-     
+
   }, []);
 
   const isGuest = user?.isGuest ?? false;
@@ -67,19 +68,22 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [currentConversation?.messages]);
+  }, [currentConversation?.messages, currentConversation?.messages?.length]);
 
   // Sincroniza o modelo selecionado quando troca de conversa
   useEffect(() => {
     if (currentConversation && currentConversation.model) {
       setSelectedModel(currentConversation.model);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentConversation?.id]);
 
   const handleNewChat = () => {
     const newConv = createConversation(selectedModel);
     saveConversation(newConv, isGuest); // Salva imediatamente
-    setConversations([...conversations, newConv]); // Adiciona na lista
+    // Recarrega as conversas do storage para garantir sincronização
+    const allConversations = getConversations(isGuest);
+    setConversations(allConversations);
     setCurrentConversation(newConv);
     setInput('');
   };
@@ -112,12 +116,14 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
     };
 
     setCurrentConversation(updatedConv);
-    addMessageToConversation(currentConversation.id, userMessage, isGuest);
     setInput('');
     setLoading(true);
 
+    // Força scroll após adicionar mensagem
+    setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+
     try {
-      if (currentConversation.title === 'New Chat' && currentConversation.messages.length === 0) {
+      if (currentConversation.title === 'Novo chat' && currentConversation.messages.length === 0) {
         const title = input.slice(0, 50);
         updateConversationTitle(currentConversation.id, title, isGuest);
         updatedConv.title = title;
@@ -127,14 +133,14 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
       const activeModel = selectedModel;
       const modelInfo = MODELS.find(m => m.id === activeModel);
       const endpoint = modelInfo?.provider === 'gemini' ? '/api/chat/gemini' : '/api/chat/groq';
-      
+
       // Atualiza o modelo da conversa
       updatedConv.model = activeModel;
-      
+
       // Em produção (Vercel), usa URL relativa. Em dev, usa localhost:3001
       const baseUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3001' : '');
       const apiUrl = `${baseUrl}${endpoint}`;
-      
+
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
@@ -171,11 +177,18 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
       setCurrentConversation(finalConv);
       saveConversation(finalConv, isGuest); // Salva a conversa completa
       // Atualiza na lista de conversas
-      setConversations(conversations.map(c => c.id === finalConv.id ? finalConv : c));
+      const updatedConversations = conversations.map(c => c.id === finalConv.id ? finalConv : c);
+      setConversations(updatedConversations);
+
+      // Força scroll após resposta
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        inputRef.current?.focus(); // Retorna foco ao input
+      }, 100);
     } catch (error) {
       console.error('Error:', error);
       let errorText = 'Falha ao obter resposta';
-      
+
       if (error instanceof Error) {
         if (error.message.includes('Failed to fetch')) {
           errorText = 'Não foi possível conectar à API. Verifique se o servidor está rodando em http://localhost:3001';
@@ -183,7 +196,7 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
           errorText = error.message;
         }
       }
-      
+
       const errorMessage: Message = {
         role: 'assistant',
         content: `❌ Erro: ${errorText}`,
@@ -196,7 +209,14 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
       setCurrentConversation(errorConv);
       saveConversation(errorConv, isGuest); // Salva a conversa completa
       // Atualiza na lista de conversas
-      setConversations(conversations.map(c => c.id === errorConv.id ? errorConv : c));
+      const updatedConversations = conversations.map(c => c.id === errorConv.id ? errorConv : c);
+      setConversations(updatedConversations);
+
+      // Força scroll após erro
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        inputRef.current?.focus(); // Retorna foco ao input
+      }, 100);
     } finally {
       setLoading(false);
     }
@@ -206,12 +226,12 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
     <div className="flex h-screen bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white overflow-hidden">
       {/* Overlay para mobile */}
       {sidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-40 md:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
-      
+
       {/* Sidebar */}
       <div className={`
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
@@ -278,29 +298,29 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
           {currentConversation?.messages.length === 0 ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center px-4">
-          <h2 className="text-xl md:text-2xl font-bold mb-2 text-zinc-900 dark:text-white">Inicie uma nova conversa</h2>
-          <p className="text-sm md:text-base text-zinc-600 dark:text-zinc-400">Escolha um modelo acima e digite sua primeira mensagem</p>
+                <h2 className="text-xl md:text-2xl font-bold mb-2 text-zinc-900 dark:text-white">Inicie uma nova conversa</h2>
+                <p className="text-sm md:text-base text-zinc-600 dark:text-zinc-400">Escolha um modelo acima e digite sua primeira mensagem</p>
               </div>
             </div>
           ) : (
             currentConversation?.messages.map((message, idx) => (
               <div key={idx} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-          <div
-            className={`max-w-[85%] md:max-w-2xl px-3 md:px-4 py-2.5 md:py-3 rounded-lg ${message.role === 'user'
-                ? 'bg-cyan-100 dark:bg-cyan-900/40 text-cyan-900 dark:text-white border border-cyan-300 dark:border-cyan-800/50'
-                : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-600'
-              }`}
-          >
-            <p className="whitespace-pre-wrap break-words text-sm md:text-base">{message.content}</p>
-          </div>
+                <div
+                  className={`max-w-[85%] md:max-w-2xl px-3 md:px-4 py-2.5 md:py-3 rounded-lg ${message.role === 'user'
+                    ? 'bg-cyan-100 dark:bg-cyan-900/40 text-cyan-900 dark:text-white border border-cyan-300 dark:border-cyan-800/50'
+                    : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-600'
+                    }`}
+                >
+                  <p className="whitespace-pre-wrap break-words text-sm md:text-base">{message.content}</p>
+                </div>
               </div>
             ))
           )}
           {loading && (
             <div className="flex justify-start">
               <div className="bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-white px-3 md:px-4 py-2.5 md:py-3 rounded-lg flex gap-2">
-          <Loader2 className="w-5 h-5 animate-spin" />
-          <span className="text-sm md:text-base">Pensando...</span>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span className="text-sm md:text-base">Pensando...</span>
               </div>
             </div>
           )}
@@ -310,6 +330,7 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
         <div className="border-t-2 border-transparent bg-zinc-100 dark:bg-zinc-800 p-3 md:p-4 relative before:absolute before:top-0 before:left-0 before:right-0 before:h-[2px] before:bg-gradient-to-r before:from-purple-500 before:via-blue-500 before:to-cyan-500 safe-area-bottom">
           <form onSubmit={handleSendMessage} className="flex gap-2">
             <input
+              ref={inputRef}
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}

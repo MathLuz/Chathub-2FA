@@ -54,7 +54,7 @@ export async function hash(password: string): Promise<string> {
   const salt = await generateSalt();
   const iterations = Math.pow(2, SALT_ROUNDS);
   const hashedPassword = await pbkdf2Hash(password, salt, iterations);
-  
+
   // Formato compatível com bcrypt: $2a$rounds$salt$hash
   return `$2a$${SALT_ROUNDS}$${salt}$${hashedPassword}`;
 }

@@ -34,10 +34,10 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (event.request.method !== 'GET') return;
-  
+
   // Skip API calls (let them go to network)
   if (event.request.url.includes('/api/')) return;
-  
+
   event.respondWith(
     caches.match(event.request)
       .then((response) => {

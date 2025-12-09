@@ -4,6 +4,7 @@ import { Auth } from './components/Auth';
 import { Verify2FA } from './components/Verify2FA';
 import { Chat } from './components/Chat';
 import { TwoFASetup } from './components/TwoFASetup';
+import { logger } from './utils/logger';
 
 type AppState = 'auth' | 'verify2fa' | '2fa-setup' | 'chat';
 
@@ -13,30 +14,30 @@ function App() {
   const [tempToken, setTempToken] = useState('');
   const [show2FASetup, setShow2FASetup] = useState(false);
 
-  console.log('🔵 [App] RENDER - user:', user, 'appState:', appState);
+  logger.log('🔵 [App] RENDER - user:', user, 'appState:', appState);
 
   // Redirecionar para chat se já tem sessão
   useEffect(() => {
-    console.log('🔵 [App] useEffect - user:', user?.email, 'has2FA:', user?.has2FAEnabled, 'appState:', appState);
+    logger.log('🔵 [App] useEffect - user:', user?.email, 'has2FA:', user?.has2FAEnabled, 'appState:', appState);
     if (user && appState === 'auth') {
-      console.log('🔵 [App] Redirecionando para chat');
+      logger.log('🔵 [App] Redirecionando para chat');
       setAppState('chat');
-      
+
       // Se o usuário não é guest e não tem 2FA, oferecer setup
       if (!user.isGuest && !user.has2FAEnabled) {
-        console.log('🔵 [App] Mostrando setup 2FA (user.has2FAEnabled =', user.has2FAEnabled, ')');
+        logger.log('🔵 [App] Mostrando setup 2FA (user.has2FAEnabled =', user.has2FAEnabled, ')');
         setShow2FASetup(true);
       } else {
-        console.log('🔵 [App] NÃO mostrando setup 2FA - isGuest:', user.isGuest, 'has2FA:', user.has2FAEnabled);
+        logger.log('🔵 [App] NÃO mostrando setup 2FA - isGuest:', user.isGuest, 'has2FA:', user.has2FAEnabled);
       }
     }
   }, [user, appState]);
 
   const handleAuthSuccess = () => {
-    console.log('🔵 [App] handleAuthSuccess chamado, user:', user);
+    logger.log('🔵 [App] handleAuthSuccess chamado, user:', user);
     // Não mudamos o appState aqui! O useEffect vai fazer isso quando o user for atualizado
     // Apenas configuramos o 2FA setup se necessário (isso será verificado depois)
-    console.log('🔵 [App] Aguardando user state atualizar...');
+    logger.log('🔵 [App] Aguardando user state atualizar...');
   };
 
   const handle2FARequired = (token: string) => {
@@ -64,7 +65,7 @@ function App() {
 
   // Renderizar telas baseado no estado
   let mainContent;
-  
+
   switch (appState) {
     case 'verify2fa':
       mainContent = (
@@ -102,7 +103,7 @@ function App() {
         <TwoFASetup
           userEmail={user.email}
           onComplete={() => {
-            console.log('✅ 2FA Setup completo!');
+            logger.log('✅ 2FA Setup completo!');
             setShow2FASetup(false);
           }}
           onSkip={() => {

@@ -45,7 +45,7 @@ export function Sidebar({
         setLoading(true);
         const result = await disable2FA(user.email);
         setLoading(false);
-        
+
         if (result.success) {
           alert('2FA desabilitado com sucesso');
           window.location.reload();
@@ -74,13 +74,12 @@ export function Sidebar({
         {conversations.map((conv) => (
           <div
             key={conv.id}
-            className={`w-full text-left px-3 md:px-4 py-2.5 md:py-3 rounded-lg transition-all duration-200 group flex items-center justify-between cursor-pointer touch-manipulation ${
-              currentConversation?.id === conv.id
+            className={`w-full text-left px-3 md:px-4 py-2.5 md:py-3 rounded-lg transition-all duration-200 group flex items-center justify-between cursor-pointer touch-manipulation ${currentConversation?.id === conv.id
                 ? 'bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-white border-l-2 border-purple-500 shadow-lg shadow-purple-500/10'
                 : 'text-zinc-700 dark:text-zinc-300 active:bg-zinc-200 dark:active:bg-zinc-700 active:text-zinc-900 dark:active:text-white active:border-l-2 active:border-cyan-500/50 border-l-2 border-transparent'
-            }`}
+              }`}
           >
-            <div 
+            <div
               className="flex-1 min-w-0"
               onClick={() => {
                 onSelectConversation(conv);

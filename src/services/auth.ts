@@ -1,13 +1,13 @@
 import { redis } from './redis';
 import { generateSecret, generateBackupCodes, verifyTOTP } from '../utils/totp';
 import { hash, compare } from '../utils/bcrypt';
-import { 
-  UserData, 
-  Session, 
-  AuthResponse, 
-  LoginRequest, 
+import {
+  UserData,
+  Session,
+  AuthResponse,
+  LoginRequest,
   RegisterRequest,
-  Setup2FAResponse 
+  Setup2FAResponse
 } from '../types/auth';
 
 class AuthService {

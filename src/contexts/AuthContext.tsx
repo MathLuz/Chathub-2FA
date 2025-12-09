@@ -1,5 +1,6 @@
 import { createContext, useState, useEffect, ReactNode } from 'react';
 import { User, Session, AuthResponse } from '../types/auth';
+import { logger } from '../utils/logger';
 
 // Em produção (Vercel), a API está na mesma URL. Em dev, usa localhost:3001
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3001' : '');
@@ -39,7 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  console.log('🔵 [AuthProvider] RENDER - user:', user);
+  logger.log('🔵 [AuthProvider] RENDER - user:', user);
 
   // Carregar sessão do localStorage (síncrono e rápido)
   useEffect(() => {
@@ -47,7 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const savedSession = localStorage.getItem(SESSION_KEY);
       if (savedSession) {
         const parsed: Session = JSON.parse(savedSession);
-        
+
         // Verificar se a sessão não expirou
         if (parsed.expiresAt > Date.now()) {
           setSession(parsed);
@@ -73,15 +74,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Salvar sessão no localStorage (APENAS para guests)
   const saveSession = (newSession: Session) => {
     const isGuest = newSession.email === 'guest';
-    
+
     // Só salvar no localStorage se for guest
     if (isGuest) {
-      console.log('🔵 [AuthProvider] Salvando sessão guest no localStorage:', newSession);
+      logger.log('🔵 [AuthProvider] Salvando sessão guest no localStorage:', newSession);
       localStorage.setItem(SESSION_KEY, JSON.stringify(newSession));
     } else {
-      console.log('🔵 [AuthProvider] Usuário autenticado - sessão gerenciada pelo backend (Redis)');
+      logger.log('🔵 [AuthProvider] Usuário autenticado - sessão gerenciada pelo backend (Redis)');
     }
-    
+
     setSession(newSession);
     const newUser = {
       id: newSession.userId,
@@ -90,14 +91,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       has2FAEnabled: newSession.has2FAEnabled,
       createdAt: Date.now(),
     };
-    console.log('🔵 [AuthProvider] Atualizando user state:', newUser);
+    logger.log('🔵 [AuthProvider] Atualizando user state:', newUser);
     setUser(newUser);
   };
 
   // Criar sessão guest
   const continueAsGuest = async (): Promise<AuthResponse> => {
     try {
-      console.log('🔵 [AuthProvider] Fazendo requisição para:', `${API_URL}/api/auth/guest`);
+      logger.log('🔵 [AuthProvider] Fazendo requisição para:', `${API_URL}/api/auth/guest`);
       const response = await fetch(`${API_URL}/api/auth/guest`, {
         method: 'POST',
         headers: {
@@ -105,15 +106,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
       });
 
-      console.log('🔵 [AuthProvider] Status da resposta:', response.status);
+      logger.log('🔵 [AuthProvider] Status da resposta:', response.status);
       const result: AuthResponse = await response.json();
-      console.log('🔵 [AuthProvider] Resultado recebido:', result);
-      
+      logger.log('🔵 [AuthProvider] Resultado recebido:', result);
+
       if (result.success && result.session) {
-        console.log('🔵 [AuthProvider] Salvando sessão:', result.session);
+        logger.log('🔵 [AuthProvider] Salvando sessão:', result.session);
         saveSession(result.session);
       }
-      
+
       return result;
     } catch (error) {
       console.error('🔴 [AuthProvider] Erro na sessão guest:', error);
@@ -136,11 +137,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       const result: AuthResponse = await response.json();
-      
+
       if (result.success && result.session) {
         saveSession(result.session);
       }
-      
+
       return result;
     } catch (error) {
       console.error('Register error:', error);
@@ -163,11 +164,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       const result: AuthResponse = await response.json();
-      
+
       if (result.success && result.session) {
         saveSession(result.session);
       }
-      
+
       return result;
     } catch (error) {
       console.error('Login error:', error);
@@ -190,11 +191,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       const result: AuthResponse = await response.json();
-      
+
       if (result.success && result.session) {
         saveSession(result.session);
       }
-      
+
       return result;
     } catch (error) {
       console.error('2FA verification error:', error);
@@ -235,11 +236,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       const result = await response.json();
-      
+
       if (result.success && user) {
         setUser({ ...user, has2FAEnabled: true });
       }
-      
+
       return result;
     } catch (error) {
       console.error('Enable 2FA error:', error);
@@ -259,11 +260,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       const result = await response.json();
-      
+
       if (result.success && user) {
         setUser({ ...user, has2FAEnabled: false });
       }
-      
+
       return result;
     } catch (error) {
       console.error('Disable 2FA error:', error);

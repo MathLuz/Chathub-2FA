@@ -8,10 +8,10 @@ class RedisService {
 
   constructor() {
     this.memoryStore = new Map();
-    
+
     // Detecta se está rodando no Node.js (backend) ou no browser (frontend)
     this.isNode = typeof process !== 'undefined' && typeof process.env !== 'undefined';
-    
+
     if (this.isNode) {
       // Backend: usa process.env (Upstash usa KV_* sem VITE_ prefix)
       this.baseUrl = process.env.KV_REST_API_URL || process.env.VITE_KV_REST_API_URL || process.env.VITE_REDIS_URL || '';
@@ -62,7 +62,7 @@ class RedisService {
 
   private localStorageFallback(command: string, args: unknown[]): unknown {
     const key = `redis:${args[0]}`;
-    
+
     // Se estiver no Node.js, usa Map em memória
     if (this.isNode) {
       switch (command.toLowerCase()) {
@@ -70,37 +70,37 @@ class RedisService {
           this.memoryStore.set(key, { value: String(args[1]) });
           return 'OK';
         }
-        
+
         case 'get': {
           const entry = this.memoryStore.get(key);
           if (!entry) return null;
-          
+
           // Verifica se expirou
           if (entry.expiresAt && entry.expiresAt < Date.now()) {
             this.memoryStore.delete(key);
             return null;
           }
-          
+
           return entry.value;
         }
-        
+
         case 'del':
           this.memoryStore.delete(key);
           return 1;
-        
+
         case 'exists': {
           const entry = this.memoryStore.get(key);
           if (!entry) return 0;
-          
+
           // Verifica se expirou
           if (entry.expiresAt && entry.expiresAt < Date.now()) {
             this.memoryStore.delete(key);
             return 0;
           }
-          
+
           return 1;
         }
-        
+
         case 'expire': {
           const entry = this.memoryStore.get(key);
           if (entry) {
@@ -109,29 +109,29 @@ class RedisService {
           }
           return 1;
         }
-        
+
         default:
           console.warn(`Command ${command} not supported in memory fallback`);
           return null;
       }
     }
-    
+
     // Se estiver no browser, usa localStorage
     switch (command.toLowerCase()) {
       case 'set':
         localStorage.setItem(key, String(args[1]));
         return 'OK';
-      
+
       case 'get':
         return localStorage.getItem(key);
-      
+
       case 'del':
         localStorage.removeItem(key);
         return 1;
-      
+
       case 'exists':
         return localStorage.getItem(key) ? 1 : 0;
-      
+
       case 'expire': {
         // localStorage não suporta expiração, mas podemos simular
         const expireKey = `${key}:expires`;
@@ -139,7 +139,7 @@ class RedisService {
         localStorage.setItem(expireKey, expiresAt.toString());
         return 1;
       }
-      
+
       default:
         console.warn(`Command ${command} not supported in localStorage fallback`);
         return null;
@@ -197,17 +197,17 @@ class RedisService {
     try {
       const key = `session:${sessionId}`;
       const data = await this.request('GET', [key]);
-      
+
       if (!data) return null;
-      
+
       const session: Session = JSON.parse(data as string);
-      
+
       // Verificar se a sessão expirou
       if (session.expiresAt < Date.now()) {
         await this.deleteSession(sessionId);
         return null;
       }
-      
+
       return session;
     } catch (error) {
       console.error('Error getting session:', error);

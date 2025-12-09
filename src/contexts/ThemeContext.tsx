@@ -14,7 +14,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     // Verifica se tem preferência salva
     const saved = localStorage.getItem('theme');
     if (saved) return saved as Theme;
-    
+
     // Caso contrário, usa o tema do sistema
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     return prefersDark ? 'dark' : 'light';

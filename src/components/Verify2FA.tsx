@@ -21,11 +21,11 @@ export function Verify2FA({ tempToken, onSuccess, onBack }: Verify2FAProps) {
 
     try {
       const result = await verify2FA(tempToken, code);
-      
+
       if (!result.success) {
         throw new Error(result.message);
       }
-      
+
       onSuccess();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Verification failed');

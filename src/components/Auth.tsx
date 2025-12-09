@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Mail, Lock, Loader2, AlertCircle, UserCircle, Sun, Moon } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
+import { logger } from '../utils/logger';
 
 interface AuthProps {
   onSuccess: () => void;
@@ -25,11 +26,11 @@ export function Auth({ onSuccess, on2FARequired }: AuthProps) {
     try {
       if (isLogin) {
         const result = await login(email, password);
-        
+
         if (!result.success) {
           throw new Error(result.message);
         }
-        
+
         if (result.requires2FA && result.tempToken && on2FARequired) {
           on2FARequired(result.tempToken);
         } else {
@@ -37,11 +38,11 @@ export function Auth({ onSuccess, on2FARequired }: AuthProps) {
         }
       } else {
         const result = await register(email, password);
-        
+
         if (!result.success) {
           throw new Error(result.message);
         }
-        
+
         setEmail('');
         setPassword('');
         alert('Account created successfully! You can now login.');
@@ -57,18 +58,18 @@ export function Auth({ onSuccess, on2FARequired }: AuthProps) {
   const handleGuest = async () => {
     setLoading(true);
     setError('');
-    
+
     try {
-      console.log('🔵 [Frontend] Iniciando sessão guest...');
+      logger.log('🔵 [Frontend] Iniciando sessão guest...');
       const result = await continueAsGuest();
-      console.log('🔵 [Frontend] Resultado da sessão guest:', result);
-      
+      logger.log('🔵 [Frontend] Resultado da sessão guest:', result);
+
       if (!result.success) {
         console.error('🔴 [Frontend] Falha ao criar sessão guest:', result.message);
         throw new Error(result.message);
       }
-      
-      console.log('✅ [Frontend] Sessão guest criada, chamando onSuccess()');
+
+      logger.log('✅ [Frontend] Sessão guest criada, chamando onSuccess()');
       onSuccess();
     } catch (err) {
       console.error('🔴 [Frontend] Erro no handleGuest:', err);
@@ -140,14 +141,14 @@ export function Auth({ onSuccess, on2FARequired }: AuthProps) {
             )}
 
             <div className="relative rounded-lg p-[2px] bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-600">
-                <button
+              <button
                 type="submit"
                 disabled={loading}
                 className="w-full bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 disabled:bg-zinc-100 dark:disabled:bg-zinc-800/50 text-zinc-900 dark:text-white font-semibold py-2 rounded-md transition-all duration-300 flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-purple-500/20"
-                >
+              >
                 {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                 {isLogin ? 'Entrar' : 'Criar Conta'}
-                </button>
+              </button>
             </div>
           </form>
 

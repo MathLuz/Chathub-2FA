@@ -32,7 +32,10 @@
             "type": "image/png"
         }
     ],
-    "categories": ["productivity", "utilities"],
+    "categories": [
+        "productivity",
+        "utilities"
+    ],
     "lang": "pt-BR",
     "dir": "ltr",
     "shortcuts": [

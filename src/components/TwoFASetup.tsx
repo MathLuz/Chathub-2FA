@@ -22,14 +22,14 @@ export function TwoFASetup({ userEmail, onComplete, onSkip }: TwoFASetupProps) {
   const handleGenerateSecret = async () => {
     setLoading(true);
     setError('');
-    
+
     try {
       const result = await setup2FA(userEmail);
-      
+
       if (!result || !result.success) {
         throw new Error(result?.message || 'Failed to setup 2FA');
       }
-      
+
       setSecret(result.secret || '');
       setBackupCodes(result.backupCodes || []);
       setQrCode(result.qrCode || '');
@@ -49,10 +49,10 @@ export function TwoFASetup({ userEmail, onComplete, onSkip }: TwoFASetupProps) {
 
     setLoading(true);
     setError('');
-    
+
     try {
       const result = await enable2FA(userEmail, verificationCode);
-      
+
       if (!result.success) {
         throw new Error(result.message || 'Invalid verification code');
       }

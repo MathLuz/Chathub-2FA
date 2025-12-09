@@ -11,6 +11,14 @@
     "resolveJsonModule": true,
     "moduleResolution": "node"
   },
-  "include": ["api/**/*", "src/services/**/*", "src/types/**/*", "src/utils/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "api/**/*",
+    "src/services/**/*",
+    "src/types/**/*",
+    "src/utils/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }

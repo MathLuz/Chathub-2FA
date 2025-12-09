@@ -19,6 +19,7 @@ export interface UserData {
 export interface Session {
   userId: string;
   email: string;
+  isGuest?: boolean;
   has2FAEnabled: boolean;
   expiresAt: number;
 }

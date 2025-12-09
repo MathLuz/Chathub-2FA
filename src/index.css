@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 @layer base {
+
   /* Dark mode (default) */
   :root.dark {
     --bg-primary: #18181b;
@@ -32,7 +33,10 @@
 
   /* Prevenir zoom em inputs no iOS */
   @media screen and (max-width: 768px) {
-    input, textarea, select {
+
+    input,
+    textarea,
+    select {
       font-size: 16px !important;
     }
   }
@@ -47,6 +51,7 @@
     from {
       opacity: 0;
     }
+
     to {
       opacity: 1;
     }

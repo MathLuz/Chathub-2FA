@@ -53,9 +53,11 @@ export function saveConversation(conversation: Conversation, isGuest = false): v
 }
 
 export function createConversation(model: string): Conversation {
+  // Gera ID único com timestamp + random para evitar colisões
+  const uniqueId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
   return {
-    id: Date.now().toString(),
-    title: 'New Chat',
+    id: uniqueId,
+    title: 'Novo chat',
     messages: [],
     model,
     createdAt: Date.now(),
