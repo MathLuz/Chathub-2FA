@@ -19,8 +19,22 @@
     --text-secondary: #71717a;
   }
 
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
   body {
     transition: background-color 0.3s ease, color 0.3s ease;
+    overscroll-behavior: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Prevenir zoom em inputs no iOS */
+  @media screen and (max-width: 768px) {
+    input, textarea, select {
+      font-size: 16px !important;
+    }
   }
 }
 
@@ -36,5 +50,16 @@
     to {
       opacity: 1;
     }
+  }
+
+  /* Safe area para notch de celulares */
+  .safe-area-bottom {
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+
+  /* Otimizações de performance */
+  .gpu-accelerated {
+    transform: translateZ(0);
+    will-change: transform;
   }
 }
