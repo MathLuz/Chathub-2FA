@@ -238,7 +238,9 @@ app.post('/api/chat/groq', async (req: Request, res: Response) => {
   try {
     const { messages, model, systemPrompt } = req.body;
     
-    console.log('🤖 [GROQ] Requisição recebida - Modelo:', model);
+    const lastUserMessage = messages.filter((m: any) => m.role === 'user').pop()?.content || '';
+    console.log('💬 [POST /api/chat/groq] Requisição de chat, modelo:', model);
+    console.log('📩 Mensagem:', lastUserMessage.substring(0, 100) + (lastUserMessage.length > 100 ? '...' : ''));
     
     if (!messages || !Array.isArray(messages)) {
       return res.status(400).json({
@@ -278,7 +280,8 @@ app.post('/api/chat/groq', async (req: Request, res: Response) => {
     const data = await apiResponse.json();
     const response = data.choices[0].message.content;
 
-    console.log('✅ [GROQ] Resposta gerada com sucesso - Modelo:', model);
+    console.log('✅ [POST /api/chat/groq] Resposta gerada com sucesso');
+    console.log('📤 Resposta:', response.substring(0, 100) + (response.length > 100 ? '...' : ''));
     res.json({ response });
   } catch (error) {
     console.error('Groq chat error:', error);
@@ -293,7 +296,9 @@ app.post('/api/chat/gemini', async (req: Request, res: Response) => {
   try {
     const { messages, model, systemPrompt } = req.body;
     
-    console.log('🧠 [GEMINI] Requisição recebida - Modelo:', model);
+    const lastUserMessage = messages.filter((m: any) => m.role === 'user').pop()?.content || '';
+    console.log('💬 [POST /api/chat/gemini] Requisição de chat, modelo:', model);
+    console.log('📩 Mensagem:', lastUserMessage.substring(0, 100) + (lastUserMessage.length > 100 ? '...' : ''));
     
     if (!messages || !Array.isArray(messages)) {
       return res.status(400).json({
@@ -341,7 +346,8 @@ app.post('/api/chat/gemini', async (req: Request, res: Response) => {
     const data = await apiResponse.json();
     const response = data.candidates[0].content.parts[0].text;
 
-    console.log('✅ [GEMINI] Resposta gerada com sucesso - Modelo:', model);
+    console.log('✅ [POST /api/chat/gemini] Resposta gerada com sucesso');
+    console.log('📤 Resposta:', response.substring(0, 100) + (response.length > 100 ? '...' : ''));
     res.json({ response });
   } catch (error) {
     console.error('Gemini chat error:', error);

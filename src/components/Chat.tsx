@@ -69,12 +69,31 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [currentConversation?.messages]);
 
+  // Sincroniza o modelo selecionado quando troca de conversa
+  useEffect(() => {
+    if (currentConversation && currentConversation.model) {
+      setSelectedModel(currentConversation.model);
+    }
+  }, [currentConversation?.id]);
+
   const handleNewChat = () => {
     const newConv = createConversation(selectedModel);
     saveConversation(newConv, isGuest); // Salva imediatamente
     setConversations([...conversations, newConv]); // Adiciona na lista
     setCurrentConversation(newConv);
     setInput('');
+  };
+
+  const handleModelChange = (newModel: string) => {
+    setSelectedModel(newModel);
+    // Se há conversa atual, atualiza o modelo dela
+    if (currentConversation) {
+      const updatedConv = { ...currentConversation, model: newModel, updatedAt: Date.now() };
+      setCurrentConversation(updatedConv);
+      saveConversation(updatedConv, isGuest);
+      // Atualiza na lista de conversas
+      setConversations(conversations.map(c => c.id === updatedConv.id ? updatedConv : c));
+    }
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -150,7 +169,9 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
       };
 
       setCurrentConversation(finalConv);
-      addMessageToConversation(currentConversation.id, assistantMessage, isGuest);
+      saveConversation(finalConv, isGuest); // Salva a conversa completa
+      // Atualiza na lista de conversas
+      setConversations(conversations.map(c => c.id === finalConv.id ? finalConv : c));
     } catch (error) {
       console.error('Error:', error);
       let errorText = 'Falha ao obter resposta';
@@ -173,7 +194,9 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
         messages: [...updatedConv.messages, errorMessage],
       };
       setCurrentConversation(errorConv);
-      addMessageToConversation(currentConversation.id, errorMessage, isGuest);
+      saveConversation(errorConv, isGuest); // Salva a conversa completa
+      // Atualiza na lista de conversas
+      setConversations(conversations.map(c => c.id === errorConv.id ? errorConv : c));
     } finally {
       setLoading(false);
     }
@@ -228,7 +251,7 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
             <span className="text-zinc-700 dark:text-zinc-300 hidden md:inline">Modelo:</span>
             <select
               value={selectedModel}
-              onChange={(e) => setSelectedModel(e.target.value)}
+              onChange={(e) => handleModelChange(e.target.value)}
               className="bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-white px-2 md:px-3 py-1.5 md:py-2 rounded-lg focus:outline-none border border-zinc-300 dark:border-zinc-600 focus:border-cyan-400 transition-colors text-sm md:text-base max-w-[120px] md:max-w-none"
             >
               {MODELS.map((model) => (
