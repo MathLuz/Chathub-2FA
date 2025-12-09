@@ -4,10 +4,11 @@ import cors from 'cors';
 import { authService } from './services/auth.js';
 import { LoginRequest, RegisterRequest } from './types/auth.js';
 
-// Desabilitar verificação SSL apenas em desenvolvimento
-if (process.env.NODE_ENV !== 'production') {
-  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-}
+// Desabilitar verificação SSL apenas em desenvolvimento (se necessário para Redis local)
+// Comentado para evitar warning de segurança - descomente apenas se tiver problemas com SSL local
+// if (process.env.NODE_ENV !== 'production') {
+//   process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+// }
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -237,6 +238,8 @@ app.post('/api/chat/groq', async (req: Request, res: Response) => {
   try {
     const { messages, model, systemPrompt } = req.body;
     
+    console.log('🤖 [GROQ] Requisição recebida - Modelo:', model);
+    
     if (!messages || !Array.isArray(messages)) {
       return res.status(400).json({
         error: 'Messages array is required',
@@ -275,6 +278,7 @@ app.post('/api/chat/groq', async (req: Request, res: Response) => {
     const data = await apiResponse.json();
     const response = data.choices[0].message.content;
 
+    console.log('✅ [GROQ] Resposta gerada com sucesso - Modelo:', model);
     res.json({ response });
   } catch (error) {
     console.error('Groq chat error:', error);
@@ -288,6 +292,8 @@ app.post('/api/chat/groq', async (req: Request, res: Response) => {
 app.post('/api/chat/gemini', async (req: Request, res: Response) => {
   try {
     const { messages, model, systemPrompt } = req.body;
+    
+    console.log('🧠 [GEMINI] Requisição recebida - Modelo:', model);
     
     if (!messages || !Array.isArray(messages)) {
       return res.status(400).json({
@@ -335,6 +341,7 @@ app.post('/api/chat/gemini', async (req: Request, res: Response) => {
     const data = await apiResponse.json();
     const response = data.candidates[0].content.parts[0].text;
 
+    console.log('✅ [GEMINI] Resposta gerada com sucesso - Modelo:', model);
     res.json({ response });
   } catch (error) {
     console.error('Gemini chat error:', error);
