@@ -49,7 +49,15 @@ class RedisService {
       const data = await response.json();
       return data.result;
     } catch (error) {
-      console.error('Redis request failed:', error);
+      // Log apenas em produção ou se for um erro diferente de conexão
+      const isDevelopment = process.env.NODE_ENV !== 'production';
+      const isConnectionError = error instanceof Error && 
+        (error.message.includes('ENOTFOUND') || error.message.includes('fetch failed'));
+      
+      if (!isDevelopment || !isConnectionError) {
+        console.error('Redis request failed:', error);
+      }
+      
       // Fallback para localStorage/memoryStore em caso de erro
       return this.localStorageFallback(command, args);
     }
