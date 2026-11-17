@@ -8,7 +8,7 @@ Plataforma de chat moderna com múltiplos modelos de IA e autenticação 2FA opc
 - **Frontend**: React + Vite + Tailwind CSS
 - **Backend**: Express.js serverless (Vercel)
 - **Database**: Upstash Redis (sessões e dados)
-- **IA**: Groq (Llama, Mixtral) + Google Gemini
+- **IA**: Groq (GPT-OSS 20B/120B, Qwen 3.8) + Google Gemini (3.1 e 3.5 Flash-Lite) — modelos de baixo custo
 - **Auth**: TOTP 2FA com backup codes
 
 **Funcionalidades:**

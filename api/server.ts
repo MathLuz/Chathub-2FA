@@ -1,7 +1,8 @@
 import 'dotenv/config';
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { authService } from './services/auth.js';
+import { chatHandler } from './lib/llm.js';
 import { LoginRequest, RegisterRequest } from './types/auth.js';
 import { logger } from './utils/logger.js';
 
@@ -234,129 +235,8 @@ app.post('/api/auth/logout', async (req: Request, res: Response) => {
   }
 });
 
-// Groq Chat endpoint
-app.post('/api/chat/groq', async (req: Request, res: Response) => {
-  try {
-    const { messages, model, systemPrompt } = req.body;
-    
-    const lastUserMessage = messages.filter((m: any) => m.role === 'user').pop()?.content || '';
-    logger.log('💬 [POST /api/chat/groq] Requisição de chat, modelo:', model);
-    logger.log('📩 Mensagem:', lastUserMessage.substring(0, 100) + (lastUserMessage.length > 100 ? '...' : ''));
-    
-    if (!messages || !Array.isArray(messages)) {
-      return res.status(400).json({
-        error: 'Messages array is required',
-      });
-    }
-
-    const groqApiKey = process.env.GROQ_API_KEY;
-    if (!groqApiKey) {
-      return res.status(500).json({ error: 'GROQ_API_KEY not configured' });
-    }
-
-    // Adicionar mensagem de sistema se fornecida
-    const messagesWithSystem = systemPrompt
-      ? [{ role: 'system', content: systemPrompt }, ...messages]
-      : messages;
-
-    const apiResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${groqApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: model,
-        messages: messagesWithSystem,
-        temperature: 0.7,
-        max_tokens: 1024,
-      }),
-    });
-
-    if (!apiResponse.ok) {
-      const error = await apiResponse.text();
-      throw new Error(`Groq API error: ${error}`);
-    }
-
-    const data = await apiResponse.json();
-    const response = data.choices[0].message.content;
-
-    logger.log('✅ [POST /api/chat/groq] Resposta gerada com sucesso');
-    logger.log('📤 Resposta:', response.substring(0, 100) + (response.length > 100 ? '...' : ''));
-    res.json({ response });
-  } catch (error) {
-    console.error('Groq chat error:', error);
-    res.status(500).json({
-      error: error instanceof Error ? error.message : 'Groq chat request failed',
-    });
-  }
-});
-
-// Gemini Chat endpoint
-app.post('/api/chat/gemini', async (req: Request, res: Response) => {
-  try {
-    const { messages, model, systemPrompt } = req.body;
-    
-    const lastUserMessage = messages.filter((m: any) => m.role === 'user').pop()?.content || '';
-    logger.log('💬 [POST /api/chat/gemini] Requisição de chat, modelo:', model);
-    logger.log('📩 Mensagem:', lastUserMessage.substring(0, 100) + (lastUserMessage.length > 100 ? '...' : ''));
-    
-    if (!messages || !Array.isArray(messages)) {
-      return res.status(400).json({
-        error: 'Messages array is required',
-      });
-    }
-
-    const geminiApiKey = process.env.GEMINI_API_KEY;
-    if (!geminiApiKey) {
-      return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
-    }
-
-    // Para Gemini, adicionar systemPrompt como primeira mensagem do usuário
-    const allMessages = systemPrompt
-      ? [{ role: 'user', content: systemPrompt }, ...messages]
-      : messages;
-
-    const contents = allMessages.map((msg: { role: string; content: string }) => ({
-      role: msg.role === 'user' ? 'user' : 'model',
-      parts: [{ text: msg.content }],
-    }));
-
-    const apiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: contents,
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 1024,
-          },
-        }),
-      }
-    );
-
-    if (!apiResponse.ok) {
-      const error = await apiResponse.text();
-      throw new Error(`Gemini API error: ${error}`);
-    }
-
-    const data = await apiResponse.json();
-    const response = data.candidates[0].content.parts[0].text;
-
-    logger.log('✅ [POST /api/chat/gemini] Resposta gerada com sucesso');
-    logger.log('📤 Resposta:', response.substring(0, 100) + (response.length > 100 ? '...' : ''));
-    res.json({ response });
-  } catch (error) {
-    console.error('Gemini chat error:', error);
-    res.status(500).json({
-      error: error instanceof Error ? error.message : 'Gemini chat request failed',
-    });
-  }
-});
+// Chat endpoints (provedor escolhido pelo modelo)
+app.post(['/api/chat', '/api/chat/groq', '/api/chat/gemini'], chatHandler);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {
@@ -367,7 +247,7 @@ app.use((_req: Request, res: Response) => {
 });
 
 // Error handler
-app.use((err: Error, _req: Request, res: Response) => {
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error('Server error:', err);
   res.status(500).json({
     success: false,

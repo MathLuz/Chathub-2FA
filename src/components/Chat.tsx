@@ -5,14 +5,17 @@ import { Sidebar } from './Sidebar';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
 
+// Mantenha em sincronia com MODEL_CONFIG em api/lib/llm.ts
 const MODELS = [
-  { id: 'llama-3.1-8b-instant', name: 'Llama 3.1 8B Instant', provider: 'groq' },
-  { id: 'allam-2-7b', name: 'Allam 2 7B', provider: 'groq' },
-  { id: 'qwen/qwen3-32b', name: 'Qwen 3 32B', provider: 'groq' },
-  { id: 'meta-llama/llama-4-maverick-17b-128e-instruct', name: 'Llama 4 Maverick 17B', provider: 'groq' },
-  { id: 'meta-llama/llama-4-scout-17b-16e-instruct', name: 'Llama 4 Scout 17B', provider: 'groq' },
-  { id: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash-Lite', provider: 'gemini' },
+  { id: 'openai/gpt-oss-20b', name: 'GPT-OSS 20B', provider: 'groq' },
+  { id: 'qwen/qwen3.8-27b', name: 'Qwen 3.8 27B', provider: 'groq' },
+  { id: 'openai/gpt-oss-120b', name: 'GPT-OSS 120B', provider: 'groq' },
+  { id: 'gemini-3.1-flash-lite', name: 'Gemini 3.1 Flash-Lite', provider: 'gemini' },
+  { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash-Lite', provider: 'gemini' },
 ];
+
+// Conversas antigas podem ter modelos que já foram desligados pelos provedores.
+const resolveModel = (id?: string) => (MODELS.some((m) => m.id === id) ? id! : MODELS[0].id);
 
 interface ChatProps {
   onLogout: () => void;
@@ -72,8 +75,8 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
 
   // Sincroniza o modelo selecionado quando troca de conversa
   useEffect(() => {
-    if (currentConversation && currentConversation.model) {
-      setSelectedModel(currentConversation.model);
+    if (currentConversation) {
+      setSelectedModel(resolveModel(currentConversation.model));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentConversation?.id]);
@@ -130,7 +133,7 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
       }
 
       // Usa o modelo selecionado no dropdown (sempre atualiza)
-      const activeModel = selectedModel;
+      const activeModel = resolveModel(selectedModel);
       const modelInfo = MODELS.find(m => m.id === activeModel);
       const endpoint = modelInfo?.provider === 'gemini' ? '/api/chat/gemini' : '/api/chat/groq';
 

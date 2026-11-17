@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:api\"",
     "dev:frontend": "vite",
-    "dev:api": "tsx watch api/server.ts",
+    "dev:api": "tsx watch --use-system-ca api/server.ts",
     "build": "vite build",
     "build:api": "tsc -p tsconfig.api.json",
     "lint": "eslint .",

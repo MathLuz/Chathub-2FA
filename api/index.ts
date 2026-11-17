@@ -2,6 +2,7 @@
 import express from 'express';
 import cors from 'cors';
 import { authService } from './services/auth.js';
+import { chatHandler } from './lib/llm.js';
 import type { LoginRequest, RegisterRequest } from './types/auth.js';
 
 const app = express();
@@ -258,124 +259,8 @@ app.post('/api/auth/logout', async (req, res) => {
   }
 });
 
-// Groq Chat endpoint
-app.post('/api/chat/groq', async (req, res) => {
-  console.log('💬 [POST /api/chat/groq] Requisição de chat, modelo:', req.body.model);
-  try {
-    const { messages, model, systemPrompt } = req.body;
-    
-    if (!messages || !Array.isArray(messages)) {
-      console.log('⚠️ [POST /api/chat/groq] Messages array não fornecido');
-      return res.status(400).json({
-        error: 'Messages array is required',
-      });
-    }
-
-    const groqApiKey = process.env.GROQ_API_KEY;
-    if (!groqApiKey) {
-      console.error('❌ [POST /api/chat/groq] GROQ_API_KEY não configurada');
-      return res.status(500).json({ error: 'GROQ_API_KEY not configured' });
-    }
-
-    const messagesWithSystem = systemPrompt
-      ? [{ role: 'system', content: systemPrompt }, ...messages]
-      : messages;
-
-    const apiResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${groqApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: model,
-        messages: messagesWithSystem,
-        temperature: 0.7,
-        max_tokens: 1024,
-      }),
-    });
-
-    if (!apiResponse.ok) {
-      const error = await apiResponse.text();
-      console.error('❌ [POST /api/chat/groq] Erro na API Groq:', error);
-      throw new Error(`Groq API error: ${error}`);
-    }
-
-    const data = await apiResponse.json();
-    const response = data.choices[0].message.content;
-    console.log('✅ [POST /api/chat/groq] Resposta gerada com sucesso');
-
-    res.json({ response });
-  } catch (error) {
-    console.error('❌ [POST /api/chat/groq] Erro geral:', error);
-    res.status(500).json({
-      error: error instanceof Error ? error.message : 'Groq chat request failed',
-    });
-  }
-});
-
-// Gemini Chat endpoint
-app.post('/api/chat/gemini', async (req, res) => {
-  console.log('📝 [POST /api/chat/gemini] Nova requisição de chat com modelo:', req.body.model);
-  try {
-    const { messages, model, systemPrompt } = req.body;
-    
-    if (!messages || !Array.isArray(messages)) {
-      console.error('❌ [POST /api/chat/gemini] Erro: messages não fornecido ou inválido');
-      return res.status(400).json({
-        error: 'Messages array is required',
-      });
-    }
-
-    const geminiApiKey = process.env.GEMINI_API_KEY;
-    if (!geminiApiKey) {
-      return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
-    }
-
-    const allMessages = systemPrompt
-      ? [{ role: 'user', content: systemPrompt }, ...messages]
-      : messages;
-
-    const contents = allMessages.map((msg: { role: string; content: string }) => ({
-      role: msg.role === 'user' ? 'user' : 'model',
-      parts: [{ text: msg.content }],
-    }));
-
-    const apiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: contents,
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 1024,
-          },
-        }),
-      }
-    );
-
-    if (!apiResponse.ok) {
-      const error = await apiResponse.text();
-      console.error('❌ [POST /api/chat/gemini] Erro na API Gemini:', error);
-      throw new Error(`Gemini API error: ${error}`);
-    }
-
-    const data = await apiResponse.json();
-    const response = data.candidates[0].content.parts[0].text;
-    console.log('✅ [POST /api/chat/gemini] Resposta gerada com sucesso');
-
-    res.json({ response });
-  } catch (error) {
-    console.error('❌ [POST /api/chat/gemini] Erro geral:', error);
-    res.status(500).json({
-      error: error instanceof Error ? error.message : 'Gemini chat request failed',
-    });
-  }
-});
+// Chat endpoints (provedor escolhido pelo modelo)
+app.post(['/api/chat', '/api/chat/groq', '/api/chat/gemini'], chatHandler);
 
 // Export para Vercel Serverless
 // A Vercel automaticamente converte o Express app em função serverless
