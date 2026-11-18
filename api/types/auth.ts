@@ -21,6 +21,9 @@ export interface Session {
   email: string;
   has2FAEnabled: boolean;
   expiresAt: number;
+  // Token secreto da sessão (só enviado ao cliente; não é salvo dentro da sessão no Redis).
+  // Visitantes não têm token.
+  token?: string;
 }
 
 export interface AuthResponse {

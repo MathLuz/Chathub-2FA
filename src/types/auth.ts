@@ -22,6 +22,7 @@ export interface Session {
   isGuest?: boolean;
   has2FAEnabled: boolean;
   expiresAt: number;
+  token?: string; // token da sessão no servidor (usuários logados; visitantes não têm)
 }
 
 export interface AuthResponse {

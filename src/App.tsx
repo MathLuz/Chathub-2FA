@@ -101,7 +101,6 @@ function App() {
       {mainContent}
       {show2FASetup && user && !user.isGuest && (
         <TwoFASetup
-          userEmail={user.email}
           onComplete={() => {
             logger.log('✅ 2FA Setup completo!');
             setShow2FASetup(false);

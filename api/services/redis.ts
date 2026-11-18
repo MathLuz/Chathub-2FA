@@ -112,7 +112,15 @@ class RedisService {
           }
           return 1;
         }
-        
+
+        case 'incr': {
+          const entry = this.memoryStore.get(key);
+          const alive = entry && !(entry.expiresAt && entry.expiresAt < Date.now());
+          const value = (alive ? Number(entry.value) || 0 : 0) + 1;
+          this.memoryStore.set(key, { value: String(value), expiresAt: alive ? entry.expiresAt : undefined });
+          return value;
+        }
+
         default:
           console.warn(`Command ${command} not supported in memory fallback`);
           return null;
@@ -227,6 +235,17 @@ class RedisService {
       console.error('Error deleting session:', error);
       return false;
     }
+  }
+
+  // Contador com janela de tempo (usado pelo rate limit).
+  // Retorna o valor após incrementar; a chave expira sozinha ao fim da janela.
+  async incrementCounter(key: string, windowSeconds: number): Promise<number> {
+    const fullKey = `ratelimit:${key}`;
+    const count = Number(await this.request('INCR', [fullKey])) || 0;
+    if (count === 1) {
+      await this.request('EXPIRE', [fullKey, windowSeconds]);
+    }
+    return count;
   }
 
   // Métodos para tokens temporários (2FA)

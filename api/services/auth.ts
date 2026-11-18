@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { redis } from './redis.js';
 import { generateSecret, generateBackupCodes, verifyTOTP } from '../utils/totp.js';
 import { hash, compare } from '../utils/bcrypt.js';
@@ -14,9 +15,14 @@ class AuthService {
   private readonly SESSION_EXPIRY = 86400; // 24 horas em segundos
   private readonly TEMP_TOKEN_EXPIRY = 300; // 5 minutos
 
-  // Gerar ID único
+  // Gerar ID único (não secreto: usado só como identificador)
   private generateId(): string {
     return `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+  }
+
+  // Token secreto e imprevisível (sessão e token temporário do 2FA)
+  private generateToken(): string {
+    return randomBytes(32).toString('hex');
   }
 
   // Criar sessão guest (não salva no Redis - apenas retorna dados para localStorage do navegador)
@@ -104,7 +110,7 @@ class AuthService {
         expiresAt: Date.now() + (this.SESSION_EXPIRY * 1000),
       };
 
-      const sessionId = this.generateId();
+      const sessionId = this.generateToken();
       await redis.saveSession(sessionId, session, this.SESSION_EXPIRY);
 
       return {
@@ -117,7 +123,7 @@ class AuthService {
           has2FAEnabled: false,
           createdAt: userData.createdAt,
         },
-        session,
+        session: { ...session, token: sessionId },
       };
     } catch (error) {
       console.error('Register error:', error);
@@ -155,7 +161,7 @@ class AuthService {
 
       // Se 2FA está habilitado, retornar token temporário
       if (userData.has2FAEnabled) {
-        const tempToken = this.generateId();
+        const tempToken = this.generateToken();
         await redis.saveTempToken(tempToken, {
           email: data.email.toLowerCase(),
           userId: this.generateId(),
@@ -178,7 +184,7 @@ class AuthService {
         expiresAt: Date.now() + (this.SESSION_EXPIRY * 1000),
       };
 
-      const sessionId = this.generateId();
+      const sessionId = this.generateToken();
       await redis.saveSession(sessionId, session, this.SESSION_EXPIRY);
 
       return {
@@ -191,7 +197,7 @@ class AuthService {
           has2FAEnabled: userData.has2FAEnabled,
           createdAt: userData.createdAt,
         },
-        session,
+        session: { ...session, token: sessionId },
       };
     } catch (error) {
       console.error('Login error:', error);
@@ -244,7 +250,7 @@ class AuthService {
         expiresAt: Date.now() + (this.SESSION_EXPIRY * 1000),
       };
 
-      const sessionId = this.generateId();
+      const sessionId = this.generateToken();
       await redis.saveSession(sessionId, session, this.SESSION_EXPIRY);
 
       return {
@@ -257,7 +263,7 @@ class AuthService {
           has2FAEnabled: true,
           createdAt: userData.createdAt,
         },
-        session,
+        session: { ...session, token: sessionId },
       };
     } catch (error) {
       console.error('2FA verification error:', error);

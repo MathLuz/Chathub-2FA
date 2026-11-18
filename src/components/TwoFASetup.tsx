@@ -3,12 +3,11 @@ import { Copy, Check, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 interface TwoFASetupProps {
-  userEmail: string;
   onComplete: () => void;
   onSkip: () => void;
 }
 
-export function TwoFASetup({ userEmail, onComplete, onSkip }: TwoFASetupProps) {
+export function TwoFASetup({ onComplete, onSkip }: TwoFASetupProps) {
   const { setup2FA, enable2FA } = useAuth();
   const [step, setStep] = useState<'intro' | 'verify' | 'backup'>('intro');
   const [secret, setSecret] = useState('');
@@ -24,7 +23,7 @@ export function TwoFASetup({ userEmail, onComplete, onSkip }: TwoFASetupProps) {
     setError('');
 
     try {
-      const result = await setup2FA(userEmail);
+      const result = await setup2FA();
 
       if (!result || !result.success) {
         throw new Error(result?.message || 'Failed to setup 2FA');
@@ -51,7 +50,7 @@ export function TwoFASetup({ userEmail, onComplete, onSkip }: TwoFASetupProps) {
     setError('');
 
     try {
-      const result = await enable2FA(userEmail, verificationCode);
+      const result = await enable2FA(verificationCode);
 
       if (!result.success) {
         throw new Error(result.message || 'Invalid verification code');

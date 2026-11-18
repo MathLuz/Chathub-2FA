@@ -43,7 +43,7 @@ export function Sidebar({
     if (user.has2FAEnabled) {
       if (confirm('Tem certeza que deseja desabilitar 2FA?')) {
         setLoading(true);
-        const result = await disable2FA(user.email);
+        const result = await disable2FA();
         setLoading(false);
 
         if (result.success) {

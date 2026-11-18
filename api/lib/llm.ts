@@ -1,6 +1,7 @@
 // Integração com os provedores de LLM (Groq e Gemini).
 // Compartilhado entre api/server.ts (dev) e api/index.ts (Vercel).
 import type { Request, Response } from 'express';
+import { MAX_CHAT_INPUT_CHARS } from './security.js';
 
 export type Provider = 'groq' | 'gemini';
 
@@ -19,8 +20,10 @@ export const MODEL_CONFIG: Record<string, ModelConfig> = {
   'openai/gpt-oss-20b': { provider: 'groq', maxOutputTokens: 2048, groqReasoning: 'gpt-oss' },
   'qwen/qwen3.8-27b': { provider: 'groq', maxOutputTokens: 2048, groqReasoning: 'qwen' },
   'openai/gpt-oss-120b': { provider: 'groq', maxOutputTokens: 2048, groqReasoning: 'gpt-oss' },
-  'gemini-3.1-flash-lite': { provider: 'gemini', maxOutputTokens: 2048, geminiThinkingLevel: 'minimal' },
-  'gemini-3.5-flash-lite': { provider: 'gemini', maxOutputTokens: 2048, geminiThinkingLevel: 'minimal' },
+  // GEMINI DESATIVADO temporariamente. Para reativar, descomente as 2 linhas abaixo
+  // e as 2 linhas equivalentes em MODELS (src/components/Chat.tsx).
+  // 'gemini-3.1-flash-lite': { provider: 'gemini', maxOutputTokens: 2048, geminiThinkingLevel: 'minimal' },
+  // 'gemini-3.5-flash-lite': { provider: 'gemini', maxOutputTokens: 2048, geminiThinkingLevel: 'minimal' },
 };
 
 interface ChatMessage {
@@ -164,10 +167,17 @@ async function chatGemini(model: string, cfg: ModelConfig, messages: ChatMessage
   return text;
 }
 
-export async function chat(model: string, rawMessages: unknown, systemPrompt?: string): Promise<string> {
+export async function chat(model: string, rawMessages: unknown, systemPrompt?: unknown): Promise<string> {
+  if (systemPrompt !== undefined && typeof systemPrompt !== 'string') {
+    throw new LLMError('systemPrompt inválido', 400);
+  }
   const cfg = MODEL_CONFIG[model];
   if (!cfg) throw new LLMError(`Modelo não suportado: ${model}`, 400);
   const messages = sanitizeMessages(rawMessages);
+  const totalChars = messages.reduce((sum, m) => sum + m.content.length, 0) + (systemPrompt?.length ?? 0);
+  if (totalChars > MAX_CHAT_INPUT_CHARS) {
+    throw new LLMError('Conversa longa demais. Comece uma nova conversa.', 413);
+  }
   return cfg.provider === 'groq'
     ? chatGroq(model, cfg, messages, systemPrompt)
     : chatGemini(model, cfg, messages, systemPrompt);

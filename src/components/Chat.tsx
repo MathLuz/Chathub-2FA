@@ -10,8 +10,10 @@ const MODELS = [
   { id: 'openai/gpt-oss-20b', name: 'GPT-OSS 20B', provider: 'groq' },
   { id: 'qwen/qwen3.8-27b', name: 'Qwen 3.8 27B', provider: 'groq' },
   { id: 'openai/gpt-oss-120b', name: 'GPT-OSS 120B', provider: 'groq' },
-  { id: 'gemini-3.1-flash-lite', name: 'Gemini 3.1 Flash-Lite', provider: 'gemini' },
-  { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash-Lite', provider: 'gemini' },
+  // GEMINI DESATIVADO temporariamente. Para reativar, descomente as 2 linhas abaixo
+  // e as 2 linhas equivalentes em MODEL_CONFIG (api/lib/llm.ts).
+  // { id: 'gemini-3.1-flash-lite', name: 'Gemini 3.1 Flash-Lite', provider: 'gemini' },
+  // { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash-Lite', provider: 'gemini' },
 ];
 
 // Conversas antigas podem ter modelos que já foram desligados pelos provedores.

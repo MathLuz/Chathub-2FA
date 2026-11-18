@@ -27,9 +27,9 @@ interface AuthContextType {
   register: (email: string, password: string) => Promise<AuthResponse>;
   login: (email: string, password: string) => Promise<AuthResponse>;
   verify2FA: (tempToken: string, code: string) => Promise<AuthResponse>;
-  setup2FA: (email: string) => Promise<Setup2FAResponse | null>;
-  enable2FA: (email: string, code: string) => Promise<TwoFAResponse>;
-  disable2FA: (email: string) => Promise<TwoFAResponse>;
+  setup2FA: () => Promise<Setup2FAResponse | null>;
+  enable2FA: (code: string) => Promise<TwoFAResponse>;
+  disable2FA: () => Promise<TwoFAResponse>;
   logout: () => Promise<void>;
 }
 
@@ -94,6 +94,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     logger.log('🔵 [AuthProvider] Atualizando user state:', newUser);
     setUser(newUser);
   };
+
+  // Cabeçalhos com o token da sessão (rotas que mexem na conta exigem isso)
+  const authHeaders = (): Record<string, string> => ({
+    'Content-Type': 'application/json',
+    ...(session?.token ? { Authorization: `Bearer ${session.token}` } : {}),
+  });
 
   // Criar sessão guest
   const continueAsGuest = async (): Promise<AuthResponse> => {
@@ -207,14 +213,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   // Setup 2FA
-  const setup2FA = async (email: string) => {
+  const setup2FA = async () => {
     try {
       const response = await fetch(`${API_URL}/api/auth/setup-2fa`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
+        headers: authHeaders(),
       });
 
       return await response.json();
@@ -225,14 +228,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   // Enable 2FA
-  const enable2FA = async (email: string, code: string): Promise<TwoFAResponse> => {
+  const enable2FA = async (code: string): Promise<TwoFAResponse> => {
     try {
       const response = await fetch(`${API_URL}/api/auth/enable-2fa`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, code }),
+        headers: authHeaders(),
+        body: JSON.stringify({ code }),
       });
 
       const result = await response.json();
@@ -249,14 +250,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   // Disable 2FA
-  const disable2FA = async (email: string): Promise<TwoFAResponse> => {
+  const disable2FA = async (): Promise<TwoFAResponse> => {
     try {
       const response = await fetch(`${API_URL}/api/auth/disable-2fa`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
+        headers: authHeaders(),
       });
 
       const result = await response.json();
@@ -275,13 +273,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Logout
   const logout = async () => {
     try {
-      if (session) {
+      // Visitantes não têm sessão no servidor; só usuários logados precisam avisar a API.
+      if (session?.token) {
         await fetch(`${API_URL}/api/auth/logout`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ sessionId: session.userId }),
+          headers: authHeaders(),
         });
       }
     } catch (error) {
