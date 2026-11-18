@@ -9,7 +9,7 @@ import { logger } from './utils/logger';
 type AppState = 'auth' | 'verify2fa' | '2fa-setup' | 'chat';
 
 function App() {
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout, restoredSession } = useAuth();
   const [appState, setAppState] = useState<AppState>('auth');
   const [tempToken, setTempToken] = useState('');
   const [show2FASetup, setShow2FASetup] = useState(false);
@@ -24,14 +24,21 @@ function App() {
       setAppState('chat');
 
       // Se o usuário não é guest e não tem 2FA, oferecer setup
-      if (!user.isGuest && !user.has2FAEnabled) {
+      // (só depois de um login de verdade, não a cada F5)
+      if (!user.isGuest && !user.has2FAEnabled && !restoredSession) {
         logger.log('🔵 [App] Mostrando setup 2FA (user.has2FAEnabled =', user.has2FAEnabled, ')');
         setShow2FASetup(true);
       } else {
         logger.log('🔵 [App] NÃO mostrando setup 2FA - isGuest:', user.isGuest, 'has2FA:', user.has2FAEnabled);
       }
     }
-  }, [user, appState]);
+
+    // Sessão encerrada por fora (ex.: token salvo venceu no servidor): volta ao login
+    if (!user && appState === 'chat') {
+      setAppState('auth');
+      setShow2FASetup(false);
+    }
+  }, [user, appState, restoredSession]);
 
   const handleAuthSuccess = () => {
     logger.log('🔵 [App] handleAuthSuccess chamado, user:', user);

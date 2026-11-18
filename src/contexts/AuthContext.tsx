@@ -1,6 +1,8 @@
 import { createContext, useState, useEffect, ReactNode } from 'react';
 import { User, Session, AuthResponse } from '../types/auth';
 import { logger } from '../utils/logger';
+import { clearGuestConversations } from '../lib/chatHistory';
+import { clearGuestCustomPersonalities } from '../lib/personalities';
 
 // Em produção (Vercel), a API está na mesma URL. Em dev, usa localhost:3001
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3001' : '');
@@ -23,6 +25,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  restoredSession: boolean; // sessão veio do localStorage (F5), não de um login agora
   continueAsGuest: () => Promise<AuthResponse>;
   register: (email: string, password: string) => Promise<AuthResponse>;
   login: (email: string, password: string) => Promise<AuthResponse>;
@@ -42,57 +45,90 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   logger.log('🔵 [AuthProvider] RENDER - user:', user);
 
-  // Carregar sessão do localStorage (síncrono e rápido)
-  useEffect(() => {
+  // true quando a sessão veio do localStorage (F5), e não de um login feito agora
+  const [restoredSession, setRestoredSession] = useState(false);
+
+  // Guarda a sessão no navegador (visitante e logado) e atualiza o estado
+  const persistSession = (newSession: Session) => {
     try {
-      const savedSession = localStorage.getItem(SESSION_KEY);
-      if (savedSession) {
-        const parsed: Session = JSON.parse(savedSession);
-
-        // Verificar se a sessão não expirou
-        if (parsed.expiresAt > Date.now()) {
-          setSession(parsed);
-          setUser({
-            id: parsed.userId,
-            email: parsed.email,
-            isGuest: parsed.email === 'guest', // Calcula baseado no email
-            has2FAEnabled: parsed.has2FAEnabled,
-            createdAt: Date.now(),
-          });
-        } else {
-          localStorage.removeItem(SESSION_KEY);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading session:', error);
-      localStorage.removeItem(SESSION_KEY);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Salvar sessão no localStorage (APENAS para guests)
-  const saveSession = (newSession: Session) => {
-    const isGuest = newSession.email === 'guest';
-
-    // Só salvar no localStorage se for guest
-    if (isGuest) {
-      logger.log('🔵 [AuthProvider] Salvando sessão guest no localStorage:', newSession);
       localStorage.setItem(SESSION_KEY, JSON.stringify(newSession));
-    } else {
-      logger.log('🔵 [AuthProvider] Usuário autenticado - sessão gerenciada pelo backend (Redis)');
+    } catch (error) {
+      console.error('Error saving session:', error);
     }
 
     setSession(newSession);
     const newUser = {
       id: newSession.userId,
       email: newSession.email,
-      isGuest,
+      isGuest: newSession.email === 'guest',
       has2FAEnabled: newSession.has2FAEnabled,
       createdAt: Date.now(),
     };
     logger.log('🔵 [AuthProvider] Atualizando user state:', newUser);
     setUser(newUser);
+  };
+
+  const clearSession = () => {
+    localStorage.removeItem(SESSION_KEY);
+    setSession(null);
+    setUser(null);
+  };
+
+  // Carregar sessão do localStorage ao abrir/recarregar a página
+  useEffect(() => {
+    let saved: Session | null = null;
+    try {
+      const raw = localStorage.getItem(SESSION_KEY);
+      saved = raw ? JSON.parse(raw) : null;
+    } catch (error) {
+      console.error('Error loading session:', error);
+    }
+
+    const isGuest = saved?.email === 'guest';
+    // Expirada, ou de usuário logado sem token (não dá para conferir no servidor)
+    if (!saved || saved.expiresAt <= Date.now() || (!isGuest && !saved.token)) {
+      localStorage.removeItem(SESSION_KEY);
+      setLoading(false);
+      return;
+    }
+
+    // Entra na hora com a sessão salva, para o F5 não piscar a tela de login
+    persistSession(saved);
+    setRestoredSession(true);
+    setLoading(false);
+
+    // Usuário logado: confere no servidor se o token ainda vale (pode ter sido
+    // encerrado por logout em outra aba ou pelo vencimento no Redis).
+    if (!isGuest && saved.token) {
+      const token = saved.token;
+      fetch(`${API_URL}/api/auth/session`, { headers: { Authorization: `Bearer ${token}` } })
+        .then(async (response) => {
+          if (response.status === 401) {
+            logger.log('🔵 [AuthProvider] Sessão salva não vale mais, voltando ao login');
+            clearSession();
+            return;
+          }
+          if (!response.ok) return; // API fora do ar: mantém a sessão salva
+          const result: AuthResponse = await response.json();
+          if (result.success && result.session) {
+            persistSession({ ...result.session, token });
+          }
+        })
+        .catch(() => {
+          // Sem conexão: mantém a sessão salva; as rotas protegidas conferem o token de novo
+        });
+    }
+  }, []);
+
+  // Sessão nova, vinda de login/cadastro/2FA/visitante
+  const saveSession = (newSession: Session) => {
+    setRestoredSession(false);
+    persistSession(newSession);
+  };
+
+  // Mantém o estado do 2FA da sessão salva em dia (senão o F5 traria o valor antigo)
+  const setHas2FA = (enabled: boolean) => {
+    if (session) persistSession({ ...session, has2FAEnabled: enabled });
   };
 
   // Cabeçalhos com o token da sessão (rotas que mexem na conta exigem isso)
@@ -238,9 +274,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const result = await response.json();
 
-      if (result.success && user) {
-        setUser({ ...user, has2FAEnabled: true });
-      }
+      if (result.success) setHas2FA(true);
 
       return result;
     } catch (error) {
@@ -259,9 +293,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const result = await response.json();
 
-      if (result.success && user) {
-        setUser({ ...user, has2FAEnabled: false });
-      }
+      if (result.success) setHas2FA(false);
 
       return result;
     } catch (error) {
@@ -283,9 +315,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      localStorage.removeItem(SESSION_KEY);
-      setSession(null);
-      setUser(null);
+      // Histórico de visitante não pertence a ninguém: some quando ele sai.
+      if (user?.isGuest) {
+        clearGuestConversations();
+        clearGuestCustomPersonalities();
+      }
+      clearSession();
     }
   };
 
@@ -295,6 +330,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         session,
         loading,
+        restoredSession,
         continueAsGuest,
         register,
         login,

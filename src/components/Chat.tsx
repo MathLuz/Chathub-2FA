@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Message, Conversation, createConversation, updateConversationTitle, getConversations, saveConversation } from '../lib/chatHistory';
+import { Message, Conversation, createConversation, getConversations, saveConversation, deleteConversation } from '../lib/chatHistory';
 import { Send, Loader2, PanelLeftCloseIcon, PanelLeftOpenIcon, Sun, Moon } from 'lucide-react';
 import { Sidebar } from './Sidebar';
 import { MarkdownMessage } from './MarkdownMessage';
@@ -110,6 +110,20 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
     setInput('');
   };
 
+  const handleDeleteConversation = (id: string) => {
+    deleteConversation(id, isGuest);
+    const remaining = getConversations(isGuest);
+    if (remaining.length === 0) {
+      const newConv = createConversation(selectedModel, selectedPersonality);
+      saveConversation(newConv, isGuest);
+      setConversations([newConv]);
+      setCurrentConversation(newConv);
+      return;
+    }
+    setConversations(remaining);
+    if (currentConversation?.id === id) setCurrentConversation(remaining[0]);
+  };
+
   const handleModelChange = (newModel: string) => {
     setSelectedModel(newModel);
     // Se há conversa atual, atualiza o modelo dela
@@ -168,9 +182,17 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
     const updatedConv = {
       ...currentConversation,
       messages: [...currentConversation.messages, userMessage],
+      updatedAt: Date.now(),
     };
 
+    if (currentConversation.title === 'Novo chat' && currentConversation.messages.length === 0) {
+      updatedConv.title = input.slice(0, 50);
+    }
+
+    // Salva já a mensagem do usuário: se der F5 enquanto espera a resposta, ela não se perde
     setCurrentConversation(updatedConv);
+    saveConversation(updatedConv, isGuest);
+    setConversations((prev) => prev.map((c) => (c.id === updatedConv.id ? updatedConv : c)));
     setInput('');
     setLoading(true);
 
@@ -178,12 +200,6 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
     setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
 
     try {
-      if (currentConversation.title === 'Novo chat' && currentConversation.messages.length === 0) {
-        const title = input.slice(0, 50);
-        updateConversationTitle(currentConversation.id, title, isGuest);
-        updatedConv.title = title;
-      }
-
       // Usa o modelo selecionado no dropdown (sempre atualiza)
       const activeModel = resolveModel(selectedModel);
       const modelInfo = MODELS.find(m => m.id === activeModel);
@@ -235,8 +251,7 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
       setCurrentConversation(finalConv);
       saveConversation(finalConv, isGuest); // Salva a conversa completa
       // Atualiza na lista de conversas
-      const updatedConversations = conversations.map(c => c.id === finalConv.id ? finalConv : c);
-      setConversations(updatedConversations);
+      setConversations((prev) => prev.map((c) => (c.id === finalConv.id ? finalConv : c)));
 
       // Força scroll após resposta
       setTimeout(() => {
@@ -267,8 +282,7 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
       setCurrentConversation(errorConv);
       saveConversation(errorConv, isGuest); // Salva a conversa completa
       // Atualiza na lista de conversas
-      const updatedConversations = conversations.map(c => c.id === errorConv.id ? errorConv : c);
-      setConversations(updatedConversations);
+      setConversations((prev) => prev.map((c) => (c.id === errorConv.id ? errorConv : c)));
 
       // Força scroll após erro
       setTimeout(() => {
@@ -306,6 +320,7 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
             currentConversation={currentConversation}
             onSelectConversation={setCurrentConversation}
             onNewChat={handleNewChat}
+            onDeleteConversation={handleDeleteConversation}
             onLogout={onLogout}
             user={user}
             onClose={() => setSidebarOpen(false)}

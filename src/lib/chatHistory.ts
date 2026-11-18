@@ -14,34 +14,37 @@ export interface Conversation {
   updatedAt: number;
 }
 
+// Tudo fica no localStorage, então sobrevive a um F5.
+// Visitantes usam uma chave separada, apagada quando o visitante sai (logout).
 const STORAGE_KEY = 'chat_conversations';
-let guestConversations: Conversation[] = []; // Armazenamento temporário para guests
+const GUEST_STORAGE_KEY = 'chat_conversations_guest';
+
+const keyFor = (isGuest: boolean) => (isGuest ? GUEST_STORAGE_KEY : STORAGE_KEY);
 
 export function getConversations(isGuest = false): Conversation[] {
-  if (isGuest) {
-    return guestConversations;
+  try {
+    const data = JSON.parse(localStorage.getItem(keyFor(isGuest)) || '[]');
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
   }
-  const data = localStorage.getItem(STORAGE_KEY);
-  return data ? JSON.parse(data) : [];
+}
+
+function writeConversations(conversations: Conversation[], isGuest: boolean): void {
+  try {
+    localStorage.setItem(keyFor(isGuest), JSON.stringify(conversations));
+  } catch (error) {
+    // Ex.: armazenamento cheio ou bloqueado (aba anônima de alguns navegadores)
+    console.error('Não foi possível salvar o histórico:', error);
+  }
 }
 
 export function getConversation(id: string, isGuest = false): Conversation | undefined {
-  const conversations = getConversations(isGuest);
-  return conversations.find((c) => c.id === id);
+  return getConversations(isGuest).find((c) => c.id === id);
 }
 
 export function saveConversation(conversation: Conversation, isGuest = false): void {
-  if (isGuest) {
-    const index = guestConversations.findIndex((c) => c.id === conversation.id);
-    if (index >= 0) {
-      guestConversations[index] = conversation;
-    } else {
-      guestConversations.push(conversation);
-    }
-    return;
-  }
-
-  const conversations = getConversations();
+  const conversations = getConversations(isGuest);
   const index = conversations.findIndex((c) => c.id === conversation.id);
 
   if (index >= 0) {
@@ -50,7 +53,7 @@ export function saveConversation(conversation: Conversation, isGuest = false): v
     conversations.push(conversation);
   }
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(conversations));
+  writeConversations(conversations, isGuest);
 }
 
 export function createConversation(model: string, personality?: string): Conversation {
@@ -68,13 +71,16 @@ export function createConversation(model: string, personality?: string): Convers
 }
 
 export function deleteConversation(id: string, isGuest = false): void {
-  if (isGuest) {
-    guestConversations = guestConversations.filter((c) => c.id !== id);
-    return;
+  writeConversations(getConversations(isGuest).filter((c) => c.id !== id), isGuest);
+}
+
+// Chamado no logout do visitante: o próximo visitante neste navegador começa do zero.
+export function clearGuestConversations(): void {
+  try {
+    localStorage.removeItem(GUEST_STORAGE_KEY);
+  } catch {
+    // ignora
   }
-  const conversations = getConversations();
-  const filtered = conversations.filter((c) => c.id !== id);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
 }
 
 export function updateConversationTitle(id: string, title: string, isGuest = false): void {

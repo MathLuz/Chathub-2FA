@@ -9,6 +9,7 @@ interface SidebarProps {
   currentConversation: Conversation | null;
   onSelectConversation: (conv: Conversation) => void;
   onNewChat: () => void;
+  onDeleteConversation: (id: string) => void;
   onLogout: () => void;
   user: User | null;
   onClose: () => void;
@@ -20,6 +21,7 @@ export function Sidebar({
   currentConversation,
   onSelectConversation,
   onNewChat,
+  onDeleteConversation,
   onLogout,
   user,
   onClose,
@@ -30,11 +32,7 @@ export function Sidebar({
 
   const handleDelete = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const data = localStorage.getItem('chat_conversations');
-    const convs = data ? JSON.parse(data) : [];
-    const filtered = convs.filter((c: Conversation) => c.id !== id);
-    localStorage.setItem('chat_conversations', JSON.stringify(filtered));
-    window.location.reload();
+    onDeleteConversation(id);
   };
 
   const handleToggle2FA = async () => {

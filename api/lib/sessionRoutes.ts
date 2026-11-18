@@ -7,11 +7,36 @@
 import type { Express, Request, Response } from 'express';
 import { authService } from '../services/auth.js';
 import { requireSession } from './security.js';
+import { redis } from '../services/redis.js';
 import type { Session } from '../types/auth.js';
 
 const sessionEmail = (res: Response) => (res.locals.session as Session).email;
 
 export function registerSessionRoutes(app: Express) {
+  // Confere se o token salvo no navegador ainda vale (usado ao recarregar a página).
+  // Devolve o estado atual do 2FA, que pode ter mudado depois do login.
+  app.get('/api/auth/session', requireSession, async (_req: Request, res: Response) => {
+    const session = res.locals.session as Session;
+    try {
+      const userData = await redis.getUser(session.email);
+      if (!userData) {
+        return res.status(401).json({ success: false, message: 'Sessão inválida ou expirada. Faça login novamente.' });
+      }
+      res.json({
+        success: true,
+        session: {
+          userId: session.userId,
+          email: session.email,
+          has2FAEnabled: userData.has2FAEnabled,
+          expiresAt: session.expiresAt,
+        },
+      });
+    } catch (error) {
+      console.error('❌ [session]', error);
+      res.status(500).json({ success: false, message: 'Failed to check session' });
+    }
+  });
+
   // Gerar segredo + QR code do 2FA (ainda não ativa)
   app.post('/api/auth/setup-2fa', requireSession, async (_req: Request, res: Response) => {
     const email = sessionEmail(res);

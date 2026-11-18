@@ -72,8 +72,8 @@ export const resolvePersonality = (id: string | undefined, custom: Personality[]
   PERSONALITIES.find((p) => p.id === id) ?? custom.find((p) => p.id === id) ?? PERSONALITIES[0];
 
 // ---- Personalidades personalizadas ----
-// Mesmo esquema das conversas (chatHistory.ts): localStorage para usuários logados,
-// memória para visitantes (some ao recarregar a página).
+// Mesmo esquema das conversas (chatHistory.ts): tudo no localStorage (sobrevive ao F5),
+// com uma chave separada para visitantes, apagada no logout do visitante.
 
 interface StoredCustomPersonality {
   id: string;
@@ -83,14 +83,14 @@ interface StoredCustomPersonality {
 }
 
 const STORAGE_KEY = 'custom_personalities';
-let guestCustom: StoredCustomPersonality[] = [];
+const GUEST_STORAGE_KEY = 'custom_personalities_guest';
+const keyFor = (isGuest: boolean) => (isGuest ? GUEST_STORAGE_KEY : STORAGE_KEY);
 
 const toPersonality = (p: StoredCustomPersonality): Personality => ({ ...p, icon: PenLine, custom: true });
 
 function readStored(isGuest: boolean): StoredCustomPersonality[] {
-  if (isGuest) return guestCustom;
   try {
-    const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    const data = JSON.parse(localStorage.getItem(keyFor(isGuest)) || '[]');
     return Array.isArray(data) ? data : [];
   } catch {
     return [];
@@ -98,10 +98,19 @@ function readStored(isGuest: boolean): StoredCustomPersonality[] {
 }
 
 function writeStored(list: StoredCustomPersonality[], isGuest: boolean) {
-  if (isGuest) {
-    guestCustom = list;
-  } else {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  try {
+    localStorage.setItem(keyFor(isGuest), JSON.stringify(list));
+  } catch (error) {
+    console.error('Não foi possível salvar as personalidades:', error);
+  }
+}
+
+// Chamado no logout do visitante, junto com clearGuestConversations().
+export function clearGuestCustomPersonalities(): void {
+  try {
+    localStorage.removeItem(GUEST_STORAGE_KEY);
+  } catch {
+    // ignora
   }
 }
 
