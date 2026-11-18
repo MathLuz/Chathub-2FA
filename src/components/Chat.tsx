@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Message, Conversation, createConversation, updateConversationTitle, getConversations, saveConversation } from '../lib/chatHistory';
 import { Send, Loader2, PanelLeftCloseIcon, PanelLeftOpenIcon, Sun, Moon } from 'lucide-react';
 import { Sidebar } from './Sidebar';
+import { MarkdownMessage } from './MarkdownMessage';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
 
@@ -316,7 +317,11 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
                     : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-600'
                     }`}
                 >
-                  <p className="whitespace-pre-wrap break-words text-sm md:text-base">{message.content}</p>
+                  {message.role === 'assistant' ? (
+                    <MarkdownMessage content={message.content} />
+                  ) : (
+                    <p className="whitespace-pre-wrap break-words text-sm md:text-base">{message.content}</p>
+                  )}
                 </div>
               </div>
             ))
