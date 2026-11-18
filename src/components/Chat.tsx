@@ -3,6 +3,15 @@ import { Message, Conversation, createConversation, updateConversationTitle, get
 import { Send, Loader2, PanelLeftCloseIcon, PanelLeftOpenIcon, Sun, Moon } from 'lucide-react';
 import { Sidebar } from './Sidebar';
 import { MarkdownMessage } from './MarkdownMessage';
+import { PersonalityModal } from './PersonalityModal';
+import {
+  DEFAULT_PERSONALITY_ID,
+  resolvePersonality,
+  getCustomPersonalities,
+  saveCustomPersonality,
+  deleteCustomPersonality,
+  type CustomPersonalityInput,
+} from '../lib/personalities';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
 
@@ -32,6 +41,9 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   const [input, setInput] = useState('');
   const [selectedModel, setSelectedModel] = useState(MODELS[0].id);
+  const [selectedPersonality, setSelectedPersonality] = useState(DEFAULT_PERSONALITY_ID);
+  const [showPersonalityModal, setShowPersonalityModal] = useState(false);
+  const [customPersonalities, setCustomPersonalities] = useState(() => getCustomPersonalities(user?.isGuest ?? false));
   const [loading, setLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false); // Inicia fechado no mobile
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -70,22 +82,26 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
     };
 
     loadConversations();
+    setCustomPersonalities(getCustomPersonalities(isGuest));
   }, [isGuest]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [currentConversation?.messages, currentConversation?.messages?.length]);
 
-  // Sincroniza o modelo selecionado quando troca de conversa
+  // Sincroniza o modelo e a personalidade selecionados quando troca de conversa
   useEffect(() => {
     if (currentConversation) {
       setSelectedModel(resolveModel(currentConversation.model));
+      setSelectedPersonality(
+        resolvePersonality(currentConversation.personality, getCustomPersonalities(isGuest)).id,
+      );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentConversation?.id]);
 
   const handleNewChat = () => {
-    const newConv = createConversation(selectedModel);
+    const newConv = createConversation(selectedModel, selectedPersonality);
     saveConversation(newConv, isGuest); // Salva imediatamente
     // Recarrega as conversas do storage para garantir sincronização
     const allConversations = getConversations(isGuest);
@@ -105,6 +121,39 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
       setConversations(conversations.map(c => c.id === updatedConv.id ? updatedConv : c));
     }
   };
+
+  const applyPersonality = (newPersonality: string) => {
+    setSelectedPersonality(newPersonality);
+    // Se há conversa atual, atualiza a personalidade dela
+    if (currentConversation) {
+      const updatedConv = { ...currentConversation, personality: newPersonality, updatedAt: Date.now() };
+      setCurrentConversation(updatedConv);
+      saveConversation(updatedConv, isGuest);
+      setConversations(conversations.map(c => c.id === updatedConv.id ? updatedConv : c));
+    }
+  };
+
+  const handlePersonalityChange = (newPersonality: string) => {
+    applyPersonality(newPersonality);
+    setShowPersonalityModal(false);
+  };
+
+  // Cria ou edita uma personalidade personalizada e já passa a usá-la
+  const handleSaveCustomPersonality = (input: CustomPersonalityInput) => {
+    const id = saveCustomPersonality(input, isGuest);
+    setCustomPersonalities(getCustomPersonalities(isGuest));
+    handlePersonalityChange(id);
+  };
+
+  const handleDeleteCustomPersonality = (id: string) => {
+    deleteCustomPersonality(id, isGuest);
+    setCustomPersonalities(getCustomPersonalities(isGuest));
+    // Se era a personalidade em uso, volta para a padrão
+    if (selectedPersonality === id) applyPersonality(DEFAULT_PERSONALITY_ID);
+  };
+
+  const activePersonality = resolvePersonality(selectedPersonality, customPersonalities);
+  const PersonalityIcon = activePersonality.icon;
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,8 +189,9 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
       const modelInfo = MODELS.find(m => m.id === activeModel);
       const endpoint = modelInfo?.provider === 'gemini' ? '/api/chat/gemini' : '/api/chat/groq';
 
-      // Atualiza o modelo da conversa
+      // Atualiza o modelo e a personalidade da conversa
       updatedConv.model = activeModel;
+      updatedConv.personality = activePersonality.id;
 
       // Em produção (Vercel), usa URL relativa. Em dev, usa localhost:3001
       const baseUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3001' : '');
@@ -158,6 +208,8 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
             content: m.content,
           })),
           model: activeModel,
+          // Instruções da personalidade escolhida (system prompt)
+          systemPrompt: activePersonality.instructions,
         }),
       });
 
@@ -287,6 +339,14 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
               ))}
             </select>
             <button
+              onClick={() => setShowPersonalityModal(true)}
+              className="flex items-center gap-1.5 bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-white px-2 md:px-3 py-1.5 md:py-2 rounded-lg border border-zinc-300 dark:border-zinc-600 hover:border-purple-400 transition-colors text-sm md:text-base flex-shrink-0"
+              title={`Personalidade: ${activePersonality.name}`}
+            >
+              <PersonalityIcon className="w-4 h-4 md:w-5 md:h-5 text-purple-500" />
+              <span className="hidden md:inline">{activePersonality.name}</span>
+            </button>
+            <button
               onClick={toggleTheme}
               className="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-all hover:shadow-lg hover:shadow-purple-500/20 border border-transparent hover:border-purple-500/30 flex-shrink-0"
               title={theme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}
@@ -305,7 +365,7 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
             <div className="flex items-center justify-center h-full">
               <div className="text-center px-4">
                 <h2 className="text-xl md:text-2xl font-bold mb-2 text-zinc-900 dark:text-white">Inicie uma nova conversa</h2>
-                <p className="text-sm md:text-base text-zinc-600 dark:text-zinc-400">Escolha um modelo acima e digite sua primeira mensagem</p>
+                <p className="text-sm md:text-base text-zinc-600 dark:text-zinc-400">Escolha um modelo e uma personalidade acima e digite sua primeira mensagem</p>
               </div>
             </div>
           ) : (
@@ -369,6 +429,17 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
           </form>
         </div>
       </div>
+
+      {showPersonalityModal && (
+        <PersonalityModal
+          selectedId={activePersonality.id}
+          customPersonalities={customPersonalities}
+          onSelect={handlePersonalityChange}
+          onSaveCustom={handleSaveCustomPersonality}
+          onDeleteCustom={handleDeleteCustomPersonality}
+          onClose={() => setShowPersonalityModal(false)}
+        />
+      )}
     </div>
   );
 }

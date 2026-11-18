@@ -9,6 +9,7 @@ export interface Conversation {
   title: string;
   messages: Message[];
   model: string;
+  personality?: string; // id em src/lib/personalities.ts (opcional: conversas antigas não têm)
   createdAt: number;
   updatedAt: number;
 }
@@ -52,7 +53,7 @@ export function saveConversation(conversation: Conversation, isGuest = false): v
   localStorage.setItem(STORAGE_KEY, JSON.stringify(conversations));
 }
 
-export function createConversation(model: string): Conversation {
+export function createConversation(model: string, personality?: string): Conversation {
   // Gera ID único com timestamp + random para evitar colisões
   const uniqueId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
   return {
@@ -60,6 +61,7 @@ export function createConversation(model: string): Conversation {
     title: 'Novo chat',
     messages: [],
     model,
+    personality,
     createdAt: Date.now(),
     updatedAt: Date.now(),
   };

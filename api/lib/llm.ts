@@ -171,6 +171,11 @@ export async function chat(model: string, rawMessages: unknown, systemPrompt?: u
   if (systemPrompt !== undefined && typeof systemPrompt !== 'string') {
     throw new LLMError('systemPrompt inválido', 400);
   }
+  // Personalidades personalizadas têm até 2000 caracteres (CUSTOM_INSTRUCTIONS_MAX
+  // em src/lib/personalities.ts) + o texto base; 4000 dá folga.
+  if (systemPrompt && systemPrompt.length > 4000) {
+    throw new LLMError('Instruções da personalidade longas demais', 400);
+  }
   const cfg = MODEL_CONFIG[model];
   if (!cfg) throw new LLMError(`Modelo não suportado: ${model}`, 400);
   const messages = sanitizeMessages(rawMessages);
