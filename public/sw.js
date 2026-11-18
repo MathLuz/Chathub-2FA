@@ -1,4 +1,5 @@
-const CACHE_NAME = 'chathub-v1';
+// Troque a versão sempre que mudar a estratégia de cache: o activate apaga os caches antigos.
+const CACHE_NAME = 'chathub-v2';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -6,7 +7,7 @@ const urlsToCache = [
   '/favicon/android-chrome-512x512.png',
 ];
 
-// Install - cache resources
+// Install - pré-cacheia o básico para funcionar offline
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -15,47 +16,43 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activate - clean old caches
+// Activate - limpa caches antigos (ex.: chathub-v1, que servia o frontend velho)
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    }).then(() => self.clients.claim())
+    caches.keys()
+      .then((cacheNames) => Promise.all(
+        cacheNames.filter((name) => name !== CACHE_NAME).map((name) => caches.delete(name))
+      ))
+      .then(() => self.clients.claim())
   );
 });
 
-// Fetch - serve from cache, fallback to network
+// Fetch - network-first: sempre busca a versão nova; o cache é só fallback offline.
+// (A versão anterior era cache-first e prendia o navegador num frontend desatualizado.)
 self.addEventListener('fetch', (event) => {
-  // Skip non-GET requests
-  if (event.request.method !== 'GET') return;
+  const { request } = event;
+  if (request.method !== 'GET') return;
 
-  // Skip API calls (let them go to network)
-  if (event.request.url.includes('/api/')) return;
+  const url = new URL(request.url);
+  // Só cuida do próprio site, e nunca da API nem dos módulos do Vite em dev
+  if (url.origin !== self.location.origin) return;
+  if (url.pathname.startsWith('/api/')) return;
+  if (url.pathname.startsWith('/@') || url.pathname.startsWith('/src/') || url.pathname.startsWith('/node_modules/')) return;
 
   event.respondWith(
-    caches.match(event.request)
+    fetch(request)
       .then((response) => {
-        // Return cached version or fetch from network
-        return response || fetch(event.request).then((fetchResponse) => {
-          // Cache successful responses
-          if (fetchResponse && fetchResponse.status === 200) {
-            const responseToCache = fetchResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseToCache);
-            });
-          }
-          return fetchResponse;
-        });
+        if (response && response.status === 200 && response.type === 'basic') {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+        }
+        return response;
       })
-      .catch(() => {
-        // Return offline page if both cache and network fail
-        return caches.match('/index.html');
+      .catch(async () => {
+        const cached = await caches.match(request);
+        if (cached) return cached;
+        if (request.mode === 'navigate') return caches.match('/index.html');
+        return Response.error();
       })
   );
 });
