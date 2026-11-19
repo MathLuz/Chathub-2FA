@@ -29,6 +29,18 @@ const MODELS = [
 // Conversas antigas podem ter modelos que já foram desligados pelos provedores.
 const resolveModel = (id?: string) => (MODELS.some((m) => m.id === id) ? id! : MODELS[0].id);
 
+// Mensagem para respostas de erro que não vieram da nossa API (sem JSON com "error").
+function httpErrorMessage(response: Response): string {
+  // O firewall da Vercel (proteção contra robôs) responde 403 com uma página HTML
+  // quando o desafio de verificação do navegador expirou. Recarregar a página refaz o desafio.
+  if (response.headers.get('x-vercel-mitigated') || response.status === 403) {
+    return 'A verificação de segurança do site expirou. Recarregue a página (F5) e envie a mensagem de novo.';
+  }
+  if (response.status === 429) return 'Muitas mensagens em pouco tempo. Espere um pouco e tente de novo.';
+  if (response.status >= 500) return `O servidor teve um problema (${response.status}). Tente de novo em instantes.`;
+  return `Erro na API (${response.status})`;
+}
+
 interface ChatProps {
   onLogout: () => void;
   onShow2FASetup?: () => void;
@@ -230,8 +242,8 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || errorData.message || `Erro na API (${response.status})`);
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.error || errorData?.message || httpErrorMessage(response));
       }
 
       const data = await response.json();

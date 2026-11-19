@@ -66,6 +66,40 @@ export function sanitizeMessages(raw: unknown): ChatMessage[] {
   return result.slice(-30);
 }
 
+// Converte o tempo de espera do provedor ("3m12.5s", "1h2m", "23.5s") em texto legível.
+function formatWait(raw: string): string | null {
+  const h = Number(/(\d+(?:\.\d+)?)h/.exec(raw)?.[1] ?? 0);
+  const m = Number(/(\d+(?:\.\d+)?)m(?!s)/.exec(raw)?.[1] ?? 0);
+  const s = Number(/(\d+(?:\.\d+)?)s/.exec(raw)?.[1] ?? 0);
+  const total = Math.ceil(h * 3600 + m * 60 + s);
+  if (!total) return null;
+  if (total < 60) return `${total} segundo${total === 1 ? '' : 's'}`;
+  const minutes = Math.ceil(total / 60);
+  if (minutes < 60) return `${minutes} minuto${minutes === 1 ? '' : 's'}`;
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return rest ? `${hours}h${String(rest).padStart(2, '0')}min` : `${hours}h`;
+}
+
+// Mensagem para o usuário quando o provedor recusa por limite/cota (HTTP 429).
+// Groq: "...on tokens per day (TPD): Limit 500000, Used ... Please try again in 3m12.5s."
+// Gemini: "You exceeded your current quota... Please retry in 23.5s."
+// O texto original não vai para o cliente (traz o id da organização).
+function rateLimitMessage(provider: string, providerMessage: string, retryAfter: string | null): string {
+  const daily = /per day|\(TPD\)|\(RPD\)|PerDay|daily/i.test(providerMessage);
+  const waitRaw = /(?:try again|retry) in ([\d.hms]+)/i.exec(providerMessage)?.[1];
+  const wait =
+    (waitRaw && formatWait(waitRaw)) || (retryAfter && /^\d+$/.test(retryAfter) ? formatWait(`${retryAfter}s`) : null);
+
+  if (daily) {
+    return (
+      `A cota diária de uso deste modelo no ${provider} acabou. ` +
+      `Troque de modelo no menu acima${wait ? ` ou tente de novo em ${wait}` : ' ou tente de novo mais tarde'}.`
+    );
+  }
+  return `Limite de uso por minuto do ${provider} atingido. Tente de novo em ${wait ?? 'alguns segundos'}.`;
+}
+
 // Extrai uma mensagem legível do corpo de erro do provedor.
 async function readProviderError(res: globalThis.Response, provider: string): Promise<LLMError> {
   const text = await res.text();
@@ -76,9 +110,12 @@ async function readProviderError(res: globalThis.Response, provider: string): Pr
   } catch {
     /* corpo não é JSON */
   }
-  if (res.status === 429) message = `Limite de requisições do ${provider} atingido. Tente de novo em alguns segundos.`;
+  if (res.status === 429) {
+    console.warn(`⛔ [chat] ${provider} 429: ${message}`);
+    return new LLMError(rateLimitMessage(provider, message, res.headers.get('retry-after')), 429);
+  }
   if (res.status === 404) message = `Modelo não encontrado no ${provider} (pode ter sido descontinuado): ${message}`;
-  return new LLMError(`${provider}: ${message}`, res.status === 429 ? 429 : 502);
+  return new LLMError(`${provider}: ${message}`, 502);
 }
 
 const stripThinking = (text: string) => text.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
