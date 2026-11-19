@@ -41,6 +41,54 @@ function httpErrorMessage(response: Response): string {
   return `Erro na API (${response.status})`;
 }
 
+// ===== Recarregar sozinho quando o firewall da Vercel barra o envio =====
+// O desafio anti-robô da Vercel só é refeito ao carregar a página (um fetch não consegue).
+// Então, quando ele barra uma mensagem, recarregamos a página e reenviamos a mensagem,
+// que já está salva no histórico. A trava evita ficar recarregando sem parar.
+const RESEND_KEY = 'chathub:resend-after-reload';
+const RELOAD_GUARD_KEY = 'chathub:challenge-reload-at';
+const RELOAD_GUARD_MS = 2 * 60 * 1000; // no máximo um recarregamento automático a cada 2 minutos
+
+interface PendingResend {
+  conversationId: string;
+  isGuest: boolean;
+  at: number;
+}
+
+function isVercelChallenge(response: Response): boolean {
+  return response.status === 403 || response.headers.get('x-vercel-mitigated') === 'challenge';
+}
+
+// Marca a conversa para reenvio e recarrega a página. Retorna false se não pode
+// recarregar agora (já recarregou há pouco ou o navegador bloqueia o sessionStorage).
+function reloadForChallenge(conversationId: string, isGuest: boolean): boolean {
+  try {
+    const lastReload = Number(sessionStorage.getItem(RELOAD_GUARD_KEY) || 0);
+    if (Date.now() - lastReload < RELOAD_GUARD_MS) return false;
+    const pending: PendingResend = { conversationId, isGuest, at: Date.now() };
+    sessionStorage.setItem(RELOAD_GUARD_KEY, String(Date.now()));
+    sessionStorage.setItem(RESEND_KEY, JSON.stringify(pending));
+  } catch {
+    return false;
+  }
+  window.location.reload();
+  return true;
+}
+
+// Lê (e apaga) o pedido de reenvio deixado antes do recarregamento.
+function takePendingResend(isGuest: boolean): string | null {
+  try {
+    const raw = sessionStorage.getItem(RESEND_KEY);
+    if (!raw) return null;
+    const pending = JSON.parse(raw) as PendingResend;
+    if (pending.isGuest !== isGuest) return null; // ainda não carregou o usuário certo; tenta na próxima
+    sessionStorage.removeItem(RESEND_KEY);
+    return Date.now() - pending.at < RELOAD_GUARD_MS ? pending.conversationId : null;
+  } catch {
+    return null;
+  }
+}
+
 interface ChatProps {
   onLogout: () => void;
   onShow2FASetup?: () => void;
@@ -79,6 +127,9 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
 
   const isGuest = user?.isGuest ?? false;
 
+  // Conversa cuja última mensagem precisa ser reenviada após o recarregamento automático
+  const [pendingResend, setPendingResend] = useState<Conversation | null>(null);
+
   useEffect(() => {
     const loadConversations = () => {
       const convs = getConversations(isGuest);
@@ -88,6 +139,16 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
         saveConversation(newConv, isGuest); // Salva imediatamente
         setConversations([newConv]);
         setCurrentConversation(newConv);
+        return;
+      }
+
+      // Voltou de um recarregamento automático (firewall da Vercel): abre a mesma conversa e reenvia
+      const resendId = takePendingResend(isGuest);
+      const resendConv = resendId ? convs.find((c) => c.id === resendId) : undefined;
+      if (resendConv) {
+        setCurrentConversation(resendConv);
+        const last = resendConv.messages[resendConv.messages.length - 1];
+        if (last?.role === 'user') setPendingResend(resendConv);
       } else {
         setCurrentConversation(convs[0]);
       }
@@ -201,25 +262,42 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
       updatedConv.title = input.slice(0, 50);
     }
 
+    // Guarda na conversa o modelo (do dropdown) e a personalidade usados nesta mensagem,
+    // para o reenvio após um recarregamento automático usar os mesmos
+    updatedConv.model = resolveModel(selectedModel);
+    updatedConv.personality = activePersonality.id;
+
     // Salva já a mensagem do usuário: se der F5 enquanto espera a resposta, ela não se perde
     setCurrentConversation(updatedConv);
     saveConversation(updatedConv, isGuest);
     setConversations((prev) => prev.map((c) => (c.id === updatedConv.id ? updatedConv : c)));
     setInput('');
-    setLoading(true);
 
     // Força scroll após adicionar mensagem
     setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
 
+    await requestReply(updatedConv);
+  };
+
+  // Reenvia a mensagem que o firewall da Vercel barrou antes do recarregamento automático
+  useEffect(() => {
+    if (!pendingResend) return;
+    setPendingResend(null);
+    requestReply(pendingResend);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingResend]);
+
+  // Pede a resposta da IA para uma conversa cuja última mensagem é do usuário
+  // (já salva no histórico) e salva a resposta, ou o erro, na conversa.
+  const requestReply = async (updatedConv: Conversation) => {
+    setLoading(true);
+    let reloading = false;
+
     try {
-      // Usa o modelo selecionado no dropdown (sempre atualiza)
-      const activeModel = resolveModel(selectedModel);
+      const activeModel = resolveModel(updatedConv.model);
       const modelInfo = MODELS.find(m => m.id === activeModel);
       const endpoint = modelInfo?.provider === 'gemini' ? '/api/chat/gemini' : '/api/chat/groq';
-
-      // Atualiza o modelo e a personalidade da conversa
-      updatedConv.model = activeModel;
-      updatedConv.personality = activePersonality.id;
+      const personality = resolvePersonality(updatedConv.personality, getCustomPersonalities(isGuest));
 
       // Em produção (Vercel), usa URL relativa. Em dev, usa localhost:3001
       const baseUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3001' : '');
@@ -237,13 +315,19 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
           })),
           model: activeModel,
           // Instruções da personalidade escolhida (system prompt)
-          systemPrompt: activePersonality.instructions,
+          systemPrompt: personality.instructions,
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.error || errorData?.message || httpErrorMessage(response));
+        const apiMessage = errorData?.error || errorData?.message;
+        // Sem JSON da nossa API + 403 = firewall da Vercel: recarrega e reenvia sozinho
+        if (!apiMessage && isVercelChallenge(response) && reloadForChallenge(updatedConv.id, isGuest)) {
+          reloading = true;
+          return;
+        }
+        throw new Error(apiMessage || httpErrorMessage(response));
       }
 
       const data = await response.json();
@@ -302,7 +386,8 @@ export function Chat({ onLogout, onShow2FASetup }: ChatProps) {
         inputRef.current?.focus(); // Retorna foco ao input
       }, 100);
     } finally {
-      setLoading(false);
+      // Se a página vai recarregar, mantém o "carregando" até ela sumir
+      if (!reloading) setLoading(false);
     }
   };
 
